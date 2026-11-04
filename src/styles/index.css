@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
+@theme {
+  --font-sans: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+
+  --color-primary: #003a6c;
+  --color-primary-soft: #e1e8f0;
+  --color-accent: #008ba3;
+  --color-accent-strong: #006a7d;
+  --color-accent-soft: #ddeff2;
+
+  --color-ink: #1b2430;
+  --color-ink-sub: #4a5563;
+  --color-ink-muted: #7a8594;
+
+  --color-line: #dce3eb;
+  --color-line-soft: #e3e8ef;
+  --color-page: #f3f5f8;
+  --color-panel: #f7f9fb;
+
+  --color-danger: #8e5656;
+  --color-danger-soft: #f5eded;
+  --color-caution: #7d6a44;
+  --color-caution-soft: #f4f0e7;
+
+  --radius-card: 20px;
+  --radius-panel: 16px;
+  --radius-control: 12px;
+
+  --shadow-card: 0 4px 16px 0 rgb(16 40 72 / 0.06);
+}
+
+body {
+  @apply bg-page text-ink font-sans;
+}
