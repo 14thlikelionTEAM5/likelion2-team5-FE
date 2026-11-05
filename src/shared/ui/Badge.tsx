@@ -9,9 +9,17 @@ const styles: Record<Tone, string> = {
   caution: 'bg-caution-soft text-caution',
 };
 
-export default function Badge({ tone = 'primary', children }: { tone?: Tone; children: ReactNode }) {
+export default function Badge({
+  tone = 'primary',
+  children,
+}: {
+  tone?: Tone;
+  children: ReactNode;
+}) {
   return (
-    <span className={`inline-flex h-[34px] items-center rounded-full px-3 font-bold ${styles[tone]}`}>
+    <span
+      className={`inline-flex h-[34px] items-center rounded-full px-3 font-bold ${styles[tone]}`}
+    >
       {children}
     </span>
   );
