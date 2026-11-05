@@ -67,7 +67,7 @@ src/
     api/          서버 요청 함수 (자원별 파일)
     hooks/        공용 훅 (useLeaveConfirm: 작성 중 나가기 확인)
     types/        여러 곳에서 쓰는 선택지(Enum)
-    ui/           Button, Card, Modal, Badge, Icon
+    ui/           공용 UI (아래 표 참고)
 assets/
   decor/        로고, 배너, 배경 등 꾸미기 이미지
   features/
@@ -102,20 +102,46 @@ assets/
 
 `src/styles/index.css`에 정의되어 있음. Tailwind 클래스로 사용 (`bg-primary`, `text-ink-muted`, `rounded-card`, `shadow-card`)
 
-| 토큰                                   | 값                            | 용도                                 |
-| -------------------------------------- | ----------------------------- | ------------------------------------ |
-| `primary` / `primary-soft`             | `#003a6c` `#e1e8f0`           | 주요 버튼, 사이드바 선택 / 연한 배경 |
-| `accent` / `accent-strong`             | `#008ba3` `#006a7d`           | 로고, 진행 막대 / 진한 글자          |
-| `accent-soft`                          | `#ddeff2`                     | 아이콘 배경, "가능" 배지             |
-| `ink` / `ink-sub` / `ink-muted`        | `#1b2430` `#4a5563` `#7a8594` | 제목·본문 / 보조 글자 / 흐린 글자    |
-| `line` / `line-soft`                   | `#dce3eb` `#e3e8ef`           | 테두리                               |
-| `page` / `panel`                       | `#f3f5f8` `#f7f9fb`           | 페이지 배경 / 카드 안쪽 칸 배경      |
-| `danger` / `danger-soft`               | `#8e5656` `#f5eded`           | "불가" 글자 / 배경                   |
-| `caution` / `caution-soft`             | `#7d6a44` `#f4f0e7`           | "확인 필요" 글자 / 배경              |
-| `rounded-card` / `-panel` / `-control` | 20 / 16 / 12px                | 카드 / 안쪽 칸 / 버튼·입력창         |
-| `shadow-card`                          |                               | 카드 그림자                          |
+| 토큰                                   | 값                            | 용도                                  |
+| -------------------------------------- | ----------------------------- | ------------------------------------- |
+| `primary` / `primary-soft`             | `#003a6c` `#e1e8f0`           | 주요 버튼, 사이드바 선택 / 연한 배경  |
+| `accent` / `accent-strong`             | `#008ba3` `#006a7d`           | 로고, 진행 막대 / 진한 글자           |
+| `accent-soft`                          | `#ddeff2`                     | 아이콘 배경, "가능" 배지              |
+| `ink` / `ink-sub` / `ink-muted`        | `#1b2430` `#4a5563` `#7a8594` | 제목·본문 / 보조 글자 / 흐린 글자     |
+| `ink-faint`                            | `#9aa4b2`                     | 입력창 안내 문구(placeholder)         |
+| `line` / `line-soft`                   | `#dce3eb` `#e3e8ef`           | 테두리                                |
+| `page` / `panel`                       | `#f3f5f8` `#f7f9fb`           | 페이지 배경 / 카드 안쪽 칸 배경       |
+| `fill`                                 | `#eef1f5`                     | 세그먼트 바탕, 잠긴 입력창, 표 구분선 |
+| `table-head`                           | `#f5f7fa`                     | 표 머리 배경                          |
+| `danger` / `danger-soft`               | `#8e5656` `#f5eded`           | "불가" 글자 / 배경                    |
+| `caution` / `caution-soft`             | `#7d6a44` `#f4f0e7`           | "확인 필요" 글자 / 배경               |
+| `rounded-card` / `-panel` / `-control` | 20 / 16 / 12px                | 카드 / 안쪽 칸 / 버튼·입력창          |
+| `rounded-note` / `-small`              | 14 / 10px                     | 안내 박스 / 작은 버튼·표 머리         |
+| `shadow-card` / `shadow-thumb`         |                               | 카드 그림자 / 세그먼트·토글 손잡이    |
 
 필요한 토큰이 없으면 프론트 팀장에게 요청
+
+---
+
+## 공용 UI (`src/shared/ui`)
+
+| 컴포넌트     | 쓰는 곳                             | 주요 props                                                              |
+| ------------ | ----------------------------------- | ----------------------------------------------------------------------- |
+| `Card`       | 흰 카드                             | `title` `description` `action` (있으면 머리 표시)                       |
+| `Panel`      | 카드 안쪽 회색 칸                   |                                                                         |
+| `Button`     | 버튼                                | `variant`: primary·secondary·subtle, `size`: md·sm·xs, `icon`           |
+| `Input`      | 입력창                              | `size`: md·sm, `icon`(왼쪽), `unit`(오른쪽, 예: "원"), `disabled`(잠금) |
+| `Select`     | 드롭다운                            | `options`, `placeholder`, `size`, `icon`                                |
+| `Chip`       | 선택형 칩 (어학시험 종류)           | `selected`                                                              |
+| `Toggle`     | 켜고 끄기 (지원 가능한 학교만 보기) | `checked` `onChange` `label`                                            |
+| `Tabs`       | 밑줄 탭 (학교 상세)                 | `items` `value` `onChange`                                              |
+| `Segment`    | 합격 / 탈락 / 전체                  | `items` `value` `onChange`                                              |
+| `InfoNote`   | info 아이콘 + 안내 박스             | `tone`: gray·primary                                                    |
+| `EmptyState` | 빈 화면                             | `title` `description` `action`                                          |
+| `Table`      | 표                                  | `columns`(`key` `header` `width` `render`) `rows` `rowKey`              |
+| `Badge`      | 상태 배지                           | `tone`: accent·primary·danger·caution·neutral                           |
+| `Modal`      | 팝업                                | `open` `onClose`                                                        |
+| `Icon`       | 아이콘 (글자색을 따라감)            | `name` `size`                                                           |
 
 ---
 
