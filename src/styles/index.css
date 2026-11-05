@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 @import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 
+/* 화면 높이가 낮을 때 (사이드바 등) */
+@custom-variant short (@media (max-height: 1039px));
+@custom-variant tiny (@media (max-height: 939px));
+
 @theme {
   --font-sans: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
 
