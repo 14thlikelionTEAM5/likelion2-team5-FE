@@ -11,6 +11,7 @@
 | Tailwind CSS v4       | 스타일                   |
 | React Router 7        | 페이지 이동              |
 | TanStack Query 5      | 서버 데이터 요청·캐시    |
+| Motion                | 애니메이션               |
 | Prettier              | 코드 정렬 (저장 시 자동) |
 | Pretendard            | 폰트                     |
 | Vercel                | 배포                     |
