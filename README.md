@@ -66,7 +66,9 @@ src/
     api/          서버 요청 함수 (자원별 파일)
     hooks/        공용 훅 (useLeaveConfirm: 작성 중 나가기 확인)
     types/        여러 곳에서 쓰는 선택지(Enum)
-    ui/           Button, Card, Modal
+    ui/           Button, Card, Modal, Badge, Icon
+assets/
+  decor/        로고, 배너, 배경 등 꾸미기 이미지
   features/
     auth/ home/ schools/ experience/ favorites/ plans/ mypage/
       pages/      페이지 컴포넌트
