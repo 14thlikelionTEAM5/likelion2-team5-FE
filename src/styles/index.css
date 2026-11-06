@@ -17,11 +17,14 @@
   --color-ink: #1b2430;
   --color-ink-sub: #4a5563;
   --color-ink-muted: #7a8594;
+  --color-ink-faint: #9aa4b2;
 
   --color-line: #dce3eb;
   --color-line-soft: #e3e8ef;
   --color-page: #f3f5f8;
   --color-panel: #f7f9fb;
+  --color-fill: #eef1f5;
+  --color-table-head: #f5f7fa;
 
   --color-danger: #8e5656;
   --color-danger-soft: #f5eded;
@@ -31,8 +34,11 @@
   --radius-card: 20px;
   --radius-panel: 16px;
   --radius-control: 12px;
+  --radius-note: 14px;
+  --radius-small: 10px;
 
   --shadow-card: 0 4px 16px 0 rgb(16 40 72 / 0.06);
+  --shadow-thumb: 0 1px 3px 0 rgb(16 40 72 / 0.12);
 }
 
 body {
