@@ -46,7 +46,7 @@ export const MOCK_SCHOOLS: SchoolSummary[] = [
     eligibility: 'INELIGIBLE',
     changeType: 'QUOTA_CHANGED',
     conditionSummary: '학점 3.5 이상 · IELTS 6.5 이상',
-    ineligibleReason: '학점 부족 (기준 3.5 / 내 3.2)',
+    ineligibleReason: '학점 부족 (기준 3.5 / 내 값 3.2)',
     hasExperience: true,
     recruitCount: 3,
     baseDate: '2026-10-06',
