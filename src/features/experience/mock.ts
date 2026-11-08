@@ -45,24 +45,136 @@ export const searchSchools = (q: string) => {
 
 export const getSchoolOption = (id: number) => SCHOOLS.find((s) => s.universityId === id) ?? null;
 
-// 이미 등록한 경험 (중복 확인용). 1번 학교 2026-1 귀국보고서가 있다고 가정
-const MY_EXPERIENCES = [
-  { id: 1, kind: 'report' as ExperienceKind, universityId: 1, year: 2026, semester: 1 },
-];
+// 내 등록 내역 (/experiences/me)
+type Term = { id: number; universityId: number; year: number; semester: number };
 
+export type MySpec = Term & {
+  result: AdmissionResult;
+  exam: string;
+  score: number;
+  gpa: number;
+  majorType: MajorType;
+};
+
+export type MyReport = Term & { fields: string[]; summary: string };
+
+export type MyCredit = Term & {
+  reportId: number;
+  foreignCourse: string;
+  creditType: CreditType;
+  homeCourse?: string;
+  credits: number;
+};
+
+export type MyExperiences = { spec: MySpec[]; report: MyReport[]; credit: MyCredit[] };
+
+const MY: MyExperiences = {
+  spec: [
+    {
+      id: 1,
+      universityId: 2,
+      year: 2026,
+      semester: 1,
+      result: 'PASS',
+      exam: 'NEW_TOEFL',
+      score: 100,
+      gpa: 3.8,
+      majorType: 'PRIMARY',
+    },
+    {
+      id: 2,
+      universityId: 4,
+      year: 2025,
+      semester: 2,
+      result: 'FAIL',
+      exam: 'IELTS',
+      score: 6.5,
+      gpa: 3.5,
+      majorType: 'PRIMARY',
+    },
+  ],
+  report: [
+    {
+      id: 1,
+      universityId: 1,
+      year: 2026,
+      semester: 1,
+      fields: ['비용', '숙소', '비자', '보험'],
+      summary:
+        '기숙사는 학교 근처라 통학이 편했고, 수업은 토론과 팀 과제 비중이 높았어요. 물가가 높아 장보기 위주로 생활비를 아꼈어요.',
+    },
+    {
+      id: 2,
+      universityId: 2,
+      year: 2025,
+      semester: 2,
+      fields: ['비용', '숙소'],
+      summary: '자취를 했고 학교까지 버스로 20분 걸렸어요. 시험은 대부분 기말 한 번이었어요.',
+    },
+  ],
+  credit: [
+    {
+      id: 1,
+      reportId: 1,
+      universityId: 1,
+      year: 2026,
+      semester: 1,
+      foreignCourse: 'Marketing 201',
+      creditType: 'MAJOR_ELECTIVE',
+      homeCourse: '마케팅원론',
+      credits: 3,
+    },
+    {
+      id: 2,
+      reportId: 1,
+      universityId: 1,
+      year: 2026,
+      semester: 1,
+      foreignCourse: 'Corporate Finance',
+      creditType: 'GENERAL',
+      credits: 3,
+    },
+    {
+      id: 3,
+      reportId: 2,
+      universityId: 2,
+      year: 2025,
+      semester: 2,
+      foreignCourse: 'Organizational Behaviour',
+      creditType: 'FREE_ELECTIVE',
+      credits: 2,
+    },
+  ],
+};
+
+export const getMyExperiences = (): MyExperiences => ({
+  spec: [...MY.spec],
+  report: [...MY.report],
+  credit: [...MY.credit],
+});
+
+// 귀국보고서를 지우면 그 보고서로 등록한 인정 사례도 같이 지워짐
+export const deleteExperience = (kind: ExperienceKind, id: number) => {
+  if (kind === 'spec') MY.spec = MY.spec.filter((e) => e.id !== id);
+  if (kind === 'credit') MY.credit = MY.credit.filter((e) => e.id !== id);
+  if (kind === 'report') {
+    MY.report = MY.report.filter((e) => e.id !== id);
+    MY.credit = MY.credit.filter((e) => e.reportId !== id);
+  }
+};
+
+// 인정 사례는 과목마다 따로 등록하므로 중복 확인 안 함
 export const findDuplicate = (
   kind: ExperienceKind,
   universityId: number,
   year: number,
   semester: number,
 ) =>
-  MY_EXPERIENCES.find(
-    (e) =>
-      e.kind === kind &&
-      e.universityId === universityId &&
-      e.year === year &&
-      e.semester === semester,
-  ) ?? null;
+  kind === 'credit'
+    ? null
+    : ((MY[kind] as Term[]).find(
+        (e) => e.universityId === universityId && e.year === year && e.semester === semester,
+      ) ?? null);
 
 // 외부 AI 처리 동의 (처음 한 번만)
 let consented = false;
