@@ -31,7 +31,7 @@ export default function SchoolFilterCard({
           icon="globe"
           className="w-[299px]"
           value={filters.country}
-          onChange={(e) => onChange('country', e.target.value)}
+          onChange={(v) => onChange('country', v)}
           options={[
             { value: '', label: '국가 (전체)' },
             ...countries.map((c) => ({ value: c, label: c })),

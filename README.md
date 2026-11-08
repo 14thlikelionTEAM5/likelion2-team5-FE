@@ -3,6 +3,7 @@
 한국외대 교환학생 지원 조건 확인 서비스 프론트엔드
 
 ## 배포 주소
+
 https://passhufs.vercel.app/
 
 ## 기술 스택
@@ -135,7 +136,7 @@ assets/
 | `Panel`      | 카드 안쪽 회색 칸                   |                                                                         |
 | `Button`     | 버튼                                | `variant`: primary·secondary·subtle, `size`: md·sm·xs, `icon`           |
 | `Input`      | 입력창                              | `size`: md·sm, `icon`(왼쪽), `unit`(오른쪽, 예: "원"), `disabled`(잠금) |
-| `Select`     | 드롭다운                            | `options`, `placeholder`, `size`, `icon`                                |
+| `Select`     | 드롭다운                            | `options` `value` `onChange(value)`, `placeholder`, `size`, `icon`      |
 | `Chip`       | 선택형 칩 (어학시험 종류)           | `selected`                                                              |
 | `Toggle`     | 켜고 끄기 (지원 가능한 학교만 보기) | `checked` `onChange` `label`                                            |
 | `Tabs`       | 밑줄 탭 (학교 상세)                 | `items` `value` `onChange`                                              |
@@ -144,6 +145,7 @@ assets/
 | `EmptyState` | 빈 화면                             | `title` `description` `action`                                          |
 | `Table`      | 표                                  | `columns`(`key` `header` `width` `render`) `rows` `rowKey`              |
 | `Badge`      | 상태 배지                           | `tone`: accent·primary·danger·caution·neutral·white                     |
+| `Stagger`    | 안의 `StaggerItem`이 차례로 나타남  | `delay`(초). 상세 페이지는 섹션·카드를 `StaggerItem`으로 감싸기         |
 | `Modal`      | 팝업                                | `open` `onClose`                                                        |
 | `Icon`       | 아이콘 (글자색을 따라감)            | `name` `size`                                                           |
 
