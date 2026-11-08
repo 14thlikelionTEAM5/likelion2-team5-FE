@@ -27,6 +27,7 @@ npm run dev   # http://localhost:5173
 - 루트에 `.env` 생성 (`.env.example` 참고, 커밋 금지)
   - `VITE_API_BASE_URL`: BE 주소
   - `VITE_SKIP_AUTH=true`: 로그인 없이 모든 페이지 확인 (개발 서버에서만 동작)
+  - `VITE_DEV_LOGIN_EMAIL`, `VITE_DEV_LOGIN_PASSWORD`: 개발용 임시 계정. 둘 다 있으면 이 값으로 로그인 가능 (배포 페이지 확인용, 화면 코드에 그대로 드러나므로 진짜 비밀번호 금지)
 
 ---
 
