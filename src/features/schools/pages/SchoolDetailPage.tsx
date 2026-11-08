@@ -8,7 +8,8 @@ import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Tabs from '@/shared/ui/Tabs';
 import OfficialTab from '../components/OfficialTab';
 import SchoolHeader from '../components/SchoolHeader';
-import { getMockOfficial, getMockSchool } from '../mock';
+import SpecTab from '../components/SpecTab';
+import { getMockAdmissionReports, getMockOfficial, getMockSchool, MOCK_ME } from '../mock';
 
 const TABS: { value: SchoolTab; label: string; figma: string }[] = [
   { value: 'official', label: '공식 정보', figma: '학교 상세 - 공식 정보' },
@@ -63,6 +64,8 @@ export default function SchoolDetailPage() {
       {/* key로 탭이 바뀔 때마다 내용이 다시 차례로 나옴 */}
       {tab === 'official' ? (
         <OfficialTab key={tab} info={getMockOfficial(school)} />
+      ) : tab === 'spec' ? (
+        <SpecTab key={tab} reports={getMockAdmissionReports(school.universityId)} me={MOCK_ME} />
       ) : (
         // TODO: 나머지 탭은 각 이슈에서 구현
         <Stagger key={tab} delay={0.12}>

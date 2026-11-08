@@ -3,6 +3,7 @@ import { PATHS } from '@/app/paths';
 import Badge from '@/shared/ui/Badge';
 import Icon from '@/shared/ui/Icon';
 import type { Eligibility, SchoolSummary } from '../mock';
+import BookmarkStar from './BookmarkStar';
 
 const ELIGIBILITY_BADGE = {
   ELIGIBLE: { tone: 'accent', label: '가능' },
@@ -103,13 +104,13 @@ export default function SchoolCard({
               e.stopPropagation();
               onToggleBookmark();
             }}
-            className={`flex size-[53px] shrink-0 items-center justify-center rounded-[14px] ${
+            className={`flex size-[53px] shrink-0 items-center justify-center rounded-[14px] transition-transform active:scale-90 ${
               school.bookmarked
                 ? 'bg-accent-soft text-primary'
                 : 'border-line-soft text-ink-sub hover:bg-panel border bg-white'
             }`}
           >
-            <Icon name="star" fill={school.bookmarked ? 'currentColor' : 'none'} />
+            <BookmarkStar on={school.bookmarked} />
           </button>
         </>
       )}

@@ -3,6 +3,7 @@ import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import Icon from '@/shared/ui/Icon';
 import type { SchoolDetail } from '../mock';
+import BookmarkStar from './BookmarkStar';
 
 export default function SchoolHeader({
   school,
@@ -39,13 +40,13 @@ export default function SchoolHeader({
           type="button"
           aria-pressed={school.bookmarked}
           onClick={onToggleBookmark}
-          className={`rounded-control flex h-[54px] shrink-0 items-center gap-2 px-4 text-[18px] font-semibold ${
+          className={`rounded-control flex h-[54px] shrink-0 items-center gap-2 px-4 text-[18px] font-semibold transition-transform active:scale-95 ${
             school.bookmarked
               ? 'bg-accent-soft text-primary'
               : 'border-line-soft text-ink-sub hover:bg-panel border bg-white'
           }`}
         >
-          <Icon name="star" size={24} fill={school.bookmarked ? 'currentColor' : 'none'} />
+          <BookmarkStar on={school.bookmarked} size={24} />
           {school.bookmarked ? '찜한 학교' : '찜하기'}
         </button>
       </div>

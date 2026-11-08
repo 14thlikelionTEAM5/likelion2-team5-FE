@@ -1,3 +1,5 @@
+import type { AdmissionResult, MajorType } from '@/shared/types/enums';
+
 // TODO: /universities, /universities/countries, /bookmarks 연결 후 삭제. 필드 이름은 BE 명세에 맞추기
 
 export type Eligibility = 'ELIGIBLE' | 'INELIGIBLE' | 'UNKNOWN';
@@ -140,3 +142,96 @@ export const getMockOfficial = (school: SchoolSummary): OfficialInfo => ({
   baseDate: school.baseDate,
   judgment: MOCK_JUDGMENT[school.eligibility],
 });
+
+export type AdmissionReport = {
+  reportId: number;
+  result: AdmissionResult;
+  semester: string;
+  majorType: MajorType;
+  gpa: number;
+  exam: string;
+  score: number;
+  note?: string;
+  isSample?: boolean;
+};
+
+// 3번 학교는 비어 있음 화면 확인용
+export const getMockAdmissionReports = (universityId: number): AdmissionReport[] =>
+  universityId === 3
+    ? []
+    : [
+        {
+          reportId: 1,
+          result: 'PASS',
+          semester: '2026-1',
+          majorType: 'PRIMARY',
+          gpa: 3.8,
+          exam: 'NEW_TOEFL',
+          score: 100,
+        },
+        {
+          reportId: 2,
+          result: 'PASS',
+          semester: '2026-1',
+          majorType: 'DOUBLE',
+          gpa: 4.4,
+          exam: 'NEW_TOEFL',
+          score: 95,
+          note: '교환 동아리 활동',
+        },
+        {
+          reportId: 3,
+          result: 'FAIL',
+          semester: '2026-1',
+          majorType: 'PRIMARY',
+          gpa: 3.1,
+          exam: 'ITP_TOEFL',
+          score: 560,
+        },
+        {
+          reportId: 4,
+          result: 'PASS',
+          semester: '2025-2',
+          majorType: 'MINOR',
+          gpa: 3.2,
+          exam: 'NEW_TOEFL',
+          score: 90,
+          isSample: true,
+        },
+        {
+          reportId: 5,
+          result: 'PASS',
+          semester: '2025-2',
+          majorType: 'PRIMARY',
+          gpa: 3.6,
+          exam: 'IELTS',
+          score: 6.5,
+          isSample: true,
+        },
+        {
+          reportId: 6,
+          result: 'FAIL',
+          semester: '2025-2',
+          majorType: 'DOUBLE',
+          gpa: 3.4,
+          exam: 'NEW_TOEFL',
+          score: 82,
+          isSample: true,
+        },
+        {
+          reportId: 7,
+          result: 'PASS',
+          semester: '2025-1',
+          majorType: 'PRIMARY',
+          gpa: 4.0,
+          exam: 'NEW_TOEFL',
+          score: 112,
+          isSample: true,
+        },
+      ];
+
+// TODO: useMe() 연결 후 삭제
+export const MOCK_ME = {
+  gpa: 3.8,
+  scores: { NEW_TOEFL: 100, IELTS: 7.0 } as Record<string, number>,
+};
