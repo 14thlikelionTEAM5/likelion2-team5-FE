@@ -1,3 +1,4 @@
+import { APPLY_SCHEDULE } from '@/shared/constants/schedule';
 import type { MajorType } from '@/shared/types/enums';
 import ChangeNoticeCard, { type AgreementChanges } from '../components/ChangeNoticeCard';
 import HomeHero from '../components/HomeHero';
@@ -33,7 +34,7 @@ const MOCK_CHANGES: AgreementChanges = {
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-8">
-      <HomeHero semester="2027-1학기" nickname={MOCK_USER.nickname} />
+      <HomeHero semester={APPLY_SCHEDULE.semester} nickname={MOCK_USER.nickname} />
       <MyConditionCard
         majorType={MOCK_USER.majorType}
         gpa={MOCK_USER.gpa}
