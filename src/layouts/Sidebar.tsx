@@ -279,7 +279,7 @@ export function MobileNav() {
               role="dialog"
               aria-modal="true"
               aria-label="메뉴"
-              className="relative h-dvh w-80 max-w-[85vw] overflow-x-hidden overflow-y-auto bg-white"
+              className="relative h-dvh w-80 max-w-[85vw] overflow-hidden bg-white"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -297,7 +297,10 @@ export function MobileNav() {
               >
                 <Icon name="x" />
               </button>
-              <SidebarBody inDrawer />
+              {/* 배경은 고정하고 내용만 스크롤 */}
+              <div className="relative h-full overflow-y-auto">
+                <SidebarBody inDrawer />
+              </div>
             </motion.aside>
           </motion.div>
         )}
