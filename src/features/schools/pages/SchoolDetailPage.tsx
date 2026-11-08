@@ -5,8 +5,9 @@ import Button from '@/shared/ui/Button';
 import EmptyState from '@/shared/ui/EmptyState';
 import Placeholder from '@/shared/ui/Placeholder';
 import Tabs from '@/shared/ui/Tabs';
+import OfficialTab from '../components/OfficialTab';
 import SchoolHeader from '../components/SchoolHeader';
-import { getMockSchool } from '../mock';
+import { getMockOfficial, getMockSchool } from '../mock';
 
 const TABS: { value: SchoolTab; label: string; figma: string }[] = [
   { value: 'official', label: '공식 정보', figma: '학교 상세 - 공식 정보' },
@@ -50,12 +51,16 @@ export default function SchoolDetailPage() {
         <Tabs items={TABS} value={tab} onChange={(v) => setParams({ tab: v }, { replace: true })} />
       )}
 
-      {/* TODO: 탭별 내용은 각 이슈에서 구현 */}
-      <Placeholder
-        title={current.label}
-        owner="윤지"
-        figma={`유윤지 - 디자인 / ${current.figma}`}
-      />
+      {tab === 'official' ? (
+        <OfficialTab info={getMockOfficial(school)} />
+      ) : (
+        // TODO: 나머지 탭은 각 이슈에서 구현
+        <Placeholder
+          title={current.label}
+          owner="윤지"
+          figma={`유윤지 - 디자인 / ${current.figma}`}
+        />
+      )}
     </div>
   );
 }
