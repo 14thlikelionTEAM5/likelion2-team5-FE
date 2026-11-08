@@ -1,5 +1,6 @@
 import { APPLY_SCHEDULE } from '@/shared/constants/schedule';
 import type { MajorType } from '@/shared/types/enums';
+import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import ChangeNoticeCard, { type AgreementChanges } from '../components/ChangeNoticeCard';
 import HomeHero from '../components/HomeHero';
 import MyConditionCard, { type LanguageScore } from '../components/MyConditionCard';
@@ -33,15 +34,23 @@ const MOCK_CHANGES: AgreementChanges = {
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col gap-8">
-      <HomeHero semester={APPLY_SCHEDULE.semester} nickname={MOCK_USER.nickname} />
-      <MyConditionCard
-        majorType={MOCK_USER.majorType}
-        gpa={MOCK_USER.gpa}
-        languageScores={MOCK_USER.languageScores}
-      />
-      <ShortcutCards recentPlan={MOCK_PLAN} />
-      <ChangeNoticeCard changes={MOCK_CHANGES} />
-    </div>
+    <Stagger className="flex flex-col gap-8">
+      <StaggerItem>
+        <HomeHero semester={APPLY_SCHEDULE.semester} nickname={MOCK_USER.nickname} />
+      </StaggerItem>
+      <StaggerItem>
+        <MyConditionCard
+          majorType={MOCK_USER.majorType}
+          gpa={MOCK_USER.gpa}
+          languageScores={MOCK_USER.languageScores}
+        />
+      </StaggerItem>
+      <StaggerItem>
+        <ShortcutCards recentPlan={MOCK_PLAN} />
+      </StaggerItem>
+      <StaggerItem>
+        <ChangeNoticeCard changes={MOCK_CHANGES} />
+      </StaggerItem>
+    </Stagger>
   );
 }
