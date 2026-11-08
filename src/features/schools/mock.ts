@@ -235,3 +235,76 @@ export const MOCK_ME = {
   gpa: 3.8,
   scores: { NEW_TOEFL: 100, IELTS: 7.0 } as Record<string, number>,
 };
+
+export type CreditType = 'MAJOR_ELECTIVE' | 'GENERAL' | 'FREE_ELECTIVE';
+
+export type Course = {
+  courseId: number;
+  name: string;
+  code: string;
+  credits: number;
+  hasCase: boolean;
+};
+
+export type CourseCase = {
+  caseId: number;
+  foreignCourse: string;
+  homeCourse: string;
+  creditType: CreditType;
+  credits: number;
+  majorType: MajorType;
+  semester: string;
+  isSample?: boolean;
+};
+
+// 3번 학교는 비어 있음 화면 확인용
+export const getMockCourses = (universityId: number): Course[] =>
+  universityId === 3
+    ? []
+    : [
+        { courseId: 1, name: 'Marketing 201', code: 'MKT201', credits: 3, hasCase: true },
+        { courseId: 2, name: 'Consumer Behavior', code: 'MKT202', credits: 3, hasCase: true },
+        { courseId: 3, name: 'Corporate Finance', code: 'FIN301', credits: 3, hasCase: false },
+        {
+          courseId: 4,
+          name: 'Organizational Behavior',
+          code: 'MGT210',
+          credits: 3,
+          hasCase: false,
+        },
+      ];
+
+export const getMockCourseCases = (universityId: number): CourseCase[] =>
+  universityId === 3
+    ? []
+    : [
+        {
+          caseId: 1,
+          foreignCourse: 'Marketing 201',
+          homeCourse: '마케팅원론',
+          creditType: 'MAJOR_ELECTIVE',
+          credits: 3,
+          majorType: 'PRIMARY',
+          semester: '2026-1',
+        },
+        {
+          caseId: 2,
+          foreignCourse: 'Consumer Behavior',
+          homeCourse: '소비자행동론',
+          creditType: 'MAJOR_ELECTIVE',
+          credits: 3,
+          majorType: 'DOUBLE',
+          semester: '2025-2',
+          isSample: true,
+        },
+        {
+          caseId: 3,
+          foreignCourse: 'Marketing 201',
+          homeCourse: '교양 선택',
+          creditType: 'GENERAL',
+          credits: 2,
+          majorType: 'MINOR',
+          semester: '2025-2',
+          isSample: true,
+        },
+      ];
