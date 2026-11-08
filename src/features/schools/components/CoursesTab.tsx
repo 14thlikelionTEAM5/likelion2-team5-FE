@@ -28,7 +28,15 @@ function SampleTag() {
   );
 }
 
-export default function CoursesTab({ courses, cases }: { courses: Course[]; cases: CourseCase[] }) {
+export default function CoursesTab({
+  universityId,
+  courses,
+  cases,
+}: {
+  universityId: number;
+  courses: Course[];
+  cases: CourseCase[];
+}) {
   const navigate = useNavigate();
   // TODO: 어느 수강계획에 담을지 고르는 방식은 동균과 협의 후 /study-plans/{planId}/items 연결
   const [added, setAdded] = useState<number[]>([]);
@@ -41,7 +49,10 @@ export default function CoursesTab({ courses, cases }: { courses: Course[]; case
             title="아직 등록된 과목·인정 사례가 없어요"
             description="수강 과목과 학점 인정 결과를 등록하면 다른 지원자에게 도움이 돼요"
             action={
-              <Button icon="pen" onClick={() => navigate(PATHS.experienceNew('credit'))}>
+              <Button
+                icon="pen"
+                onClick={() => navigate(PATHS.experienceNew('credit', universityId))}
+              >
                 경험 등록하기
               </Button>
             }

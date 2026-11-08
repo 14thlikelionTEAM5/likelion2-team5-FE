@@ -73,15 +73,25 @@ export default function SchoolDetailPage() {
       {tab === 'official' ? (
         <OfficialTab key={tab} info={getMockOfficial(school)} />
       ) : tab === 'spec' ? (
-        <SpecTab key={tab} reports={getMockAdmissionReports(school.universityId)} me={MOCK_ME} />
+        <SpecTab
+          key={tab}
+          universityId={school.universityId}
+          reports={getMockAdmissionReports(school.universityId)}
+          me={MOCK_ME}
+        />
       ) : tab === 'courses' ? (
         <CoursesTab
           key={tab}
+          universityId={school.universityId}
           courses={getMockCourses(school.universityId)}
           cases={getMockCourseCases(school.universityId)}
         />
       ) : (
-        <ReportsTab key={tab} reports={getMockReturnReports(school.universityId)} />
+        <ReportsTab
+          key={tab}
+          universityId={school.universityId}
+          reports={getMockReturnReports(school.universityId)}
+        />
       )}
     </Stagger>
   );
