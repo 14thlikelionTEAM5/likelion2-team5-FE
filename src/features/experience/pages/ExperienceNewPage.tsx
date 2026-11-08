@@ -20,16 +20,20 @@ import KindSelector from '../components/KindSelector';
 import ReportFormFields from '../components/ReportFormFields';
 import ReportPaste, { MAX_REPORT_LENGTH } from '../components/ReportPaste';
 import SchoolSearch from '../components/SchoolSearch';
+import SpecFormFields from '../components/SpecFormFields';
 import StepTitle from '../components/StepTitle';
 import {
   EMPTY_REPORT,
+  emptySpec,
   extractReport,
   findDuplicate,
   getSchoolOption,
   hasConsented,
+  MY_CONDITION,
   saveConsent,
   type ReportForm,
   type SchoolOption,
+  type SpecForm,
 } from '../mock';
 
 const KINDS: ExperienceKind[] = ['report', 'spec', 'credit'];
@@ -68,7 +72,11 @@ export default function ExperienceNewPage() {
   const [completeOpen, setCompleteOpen] = useState(false);
   const [error, setError] = useState('');
 
-  const dirty = !completeOpen && (text.length > 0 || phase === 'review');
+  const [spec, setSpec] = useState<SpecForm>(emptySpec);
+  const [specTouched, setSpecTouched] = useState(false);
+
+  const dirty =
+    !completeOpen && (text.length > 0 || phase === 'review' || (kind === 'spec' && specTouched));
   const blocker = useLeaveConfirm(dirty);
 
   // TODO: /experiences/check-duplicate 연결
@@ -82,6 +90,8 @@ export default function ExperienceNewPage() {
     setPrivacyChecked(false);
     setExtracted(false);
     setForm(EMPTY_REPORT);
+    setSpec(emptySpec());
+    setSpecTouched(false);
     setError('');
   };
 
@@ -99,10 +109,22 @@ export default function ExperienceNewPage() {
 
   const onSave = () => {
     if (!school) return setError('학교를 선택해 주세요');
-    // TODO: /return-reports 저장 (원문 text는 보내지 않음)
+    if (kind === 'spec' && MY_CONDITION.scores.length > 0 && !spec.exam)
+      return setError('어학 성적을 골라 주세요');
+    // TODO: report → /return-reports (원문 text는 보내지 않음), spec → /admission-reports
     setError('');
     setCompleteOpen(true);
   };
+
+  const saveRow = (note: string) => (
+    <div className="flex items-center gap-3">
+      <Icon name="lock" size={19} className="text-ink-muted" />
+      <span className="text-ink-muted text-[16px]">{note}</span>
+      <div className="flex-1" />
+      {error && <span className="text-danger text-[16px] font-medium">{error}</span>}
+      <Button onClick={onSave}>저장</Button>
+    </div>
+  );
 
   return (
     <Stagger className="flex flex-col gap-8">
@@ -119,6 +141,7 @@ export default function ExperienceNewPage() {
               const next = new URLSearchParams(params);
               next.set('type', k);
               setParams(next, { replace: true });
+              setError('');
             }}
           />
 
@@ -175,8 +198,21 @@ export default function ExperienceNewPage() {
                   기존 등록 수정하기
                 </Button>
               </Card>
-            ) : kind !== 'report' ? (
-              // TODO: #14 합격/탈락 스펙, #15 학점 인정 결과
+            ) : kind === 'spec' ? (
+              <Card className="flex flex-col gap-7">
+                <StepTitle no={3}>합격 / 탈락 스펙 입력</StepTitle>
+                <SpecFormFields
+                  value={spec}
+                  onChange={(v) => {
+                    setSpec(v);
+                    setSpecTouched(true);
+                    setError('');
+                  }}
+                />
+                {saveRow('저장하면 입력값을 확인한 뒤 등록돼요')}
+              </Card>
+            ) : kind === 'credit' ? (
+              // TODO: #15 학점 인정 결과
               <Placeholder title={KIND_LABEL[kind]} owner="윤지" />
             ) : phase === 'paste' ? (
               <Card className="flex flex-col gap-6">
@@ -229,15 +265,7 @@ export default function ExperienceNewPage() {
                   )}
                 </StepTitle>
                 <ReportFormFields value={form} onChange={setForm} />
-                <div className="flex items-center gap-3">
-                  <Icon name="lock" size={19} className="text-ink-muted" />
-                  <span className="text-ink-muted text-[16px]">
-                    저장 시 붙여넣은 원문은 저장하지 않고 항목과 요약만 보관해요
-                  </span>
-                  <div className="flex-1" />
-                  {error && <span className="text-danger text-[16px] font-medium">{error}</span>}
-                  <Button onClick={onSave}>저장</Button>
-                </div>
+                {saveRow('저장 시 붙여넣은 원문은 저장하지 않고 항목과 요약만 보관해요')}
               </Card>
             )}
           </motion.div>
