@@ -1,6 +1,32 @@
 // TODO: /universities/search, /experiences/check-duplicate, /consents, /return-reports/extract 연결 후 삭제
 import type { ExperienceKind } from '@/app/paths';
 import { MOCK_SCHOOLS, type HousingType } from '@/features/schools/mock';
+import type { AdmissionResult, MajorType } from '@/shared/types/enums';
+
+// TODO: useMe() 연결 후 삭제
+export const MY_CONDITION = {
+  gpa: 3.8,
+  majorType: 'PRIMARY' as MajorType,
+  scores: [
+    { exam: 'NEW_TOEFL', score: 100 },
+    { exam: 'IELTS', score: 7.0 },
+  ],
+};
+
+export type SpecForm = {
+  result: AdmissionResult;
+  exam: string;
+  note: string;
+};
+
+export const MAX_NOTE_LENGTH = 100;
+
+// 어학 성적이 1개면 바로 채움
+export const emptySpec = (): SpecForm => ({
+  result: 'PASS',
+  exam: MY_CONDITION.scores.length === 1 ? MY_CONDITION.scores[0].exam : '',
+  note: '',
+});
 
 export type SchoolOption = { universityId: number; name: string; country: string };
 
