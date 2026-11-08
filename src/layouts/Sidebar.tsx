@@ -8,10 +8,10 @@ import Icon, { type IconName } from '@/shared/ui/Icon';
 import logo from '@/assets/decor/logo-passhufs.svg';
 import sidebarBg from '@/assets/decor/sidebar-bg.svg';
 import ddayCardBg from '@/assets/decor/dday-card.svg';
+import { APPLY_SCHEDULE, getDaysLeft } from '@/shared/constants/schedule';
 
-// TODO: useMe(), D-day 데이터 연결
+// TODO: useMe() 연결
 const MOCK_USER = { nickname: 'OOO', majorType: 'PRIMARY' as MajorType };
-const MOCK_DDAY = { semester: '2027-1학기 교환학생', daysLeft: 123 };
 
 type SubItem = { label: string; to: string; match: (path: string) => boolean };
 type MenuItem = {
@@ -128,15 +128,20 @@ function MenuLink({ item, path }: { item: MenuItem; path: string }) {
 }
 
 function DdayCard() {
+  const daysLeft = getDaysLeft();
+
   return (
     <div
       className="relative h-[227px] w-[272px] overflow-hidden rounded-[27px] bg-cover px-6 pt-7"
       style={{ backgroundImage: `url("${ddayCardBg}")` }}
     >
-      <p className="text-[17px] font-semibold text-[#9fd3dc]">{MOCK_DDAY.semester}</p>
-      <p className="mt-2 text-xl font-medium text-white">지원 마감까지</p>
-      <p className="text-[56px] leading-tight font-extrabold text-white">D-{MOCK_DDAY.daysLeft}</p>
-      {/* TODO: 이동 경로 확인 필요 */}
+      <p className="text-[17px] font-semibold text-[#9fd3dc]">{APPLY_SCHEDULE.semester} 교환학생</p>
+      <p className="mt-2 text-xl font-medium text-white">
+        {daysLeft === null ? '지원이 마감됐어요' : '지원 마감까지'}
+      </p>
+      <p className="text-[56px] leading-tight font-extrabold text-white">
+        {daysLeft === null ? '마감' : daysLeft === 0 ? 'D-DAY' : `D-${daysLeft}`}
+      </p>
       <Link
         to={PATHS.mypage}
         className="text-primary absolute bottom-[18px] left-6 flex h-[50px] w-[222px] items-center justify-center gap-1.5 rounded-[14px] bg-white text-lg font-bold"
