@@ -74,7 +74,7 @@ export default function SpecTab({
 
   return (
     <Stagger delay={0.12} className="flex flex-col gap-6">
-      <StaggerItem className="flex items-center">
+      <StaggerItem className="flex flex-wrap items-center gap-3">
         <Segment
           items={RESULT_ITEMS}
           value={filter}
@@ -89,7 +89,7 @@ export default function SpecTab({
         </Button>
       </StaggerItem>
 
-      <div className="flex items-start gap-6">
+      <div className="3xl:flex-row 3xl:items-start flex flex-col gap-6">
         <StaggerItem className="min-w-0 flex-1">
           <Card
             title="합격 스펙 범위"
@@ -126,7 +126,7 @@ export default function SpecTab({
           </Card>
         </StaggerItem>
 
-        <StaggerItem className="w-[600px] shrink-0">
+        <StaggerItem className="3xl:w-[600px] 3xl:shrink-0">
           <Card title="스펙 목록" description="최근 등록순">
             <div className="flex flex-col gap-5">
               <motion.div layout className="flex flex-col gap-3">
@@ -145,7 +145,7 @@ export default function SpecTab({
                         {r.result === 'PASS' ? '합격' : '탈락'}
                       </Badge>
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <p className="flex items-center gap-2 text-[19px] font-semibold">
+                        <p className="flex flex-wrap items-center gap-x-2 text-[17px] font-semibold sm:text-[19px]">
                           {r.semester}학기 · {MAJOR_TYPE_LABEL[r.majorType]} · 학점{' '}
                           {r.gpa.toFixed(1)}
                           /4.5
@@ -211,8 +211,8 @@ function RangePanel({
   control?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-panel bg-panel flex flex-col gap-3.5 p-5">
-      <div className="flex items-center gap-2.5">
+    <div className="rounded-panel bg-panel flex flex-col gap-3.5 p-4 sm:p-5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <h3 className="text-[20px] font-bold">{title}</h3>
         {control}
         <div className="flex-1" />

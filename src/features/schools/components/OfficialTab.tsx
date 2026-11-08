@@ -43,11 +43,11 @@ export default function OfficialTab({ info }: { info: OfficialInfo }) {
   const judgment = JUDGMENT_STYLE[info.judgment.result];
 
   return (
-    <Stagger delay={0.12} className="flex items-start gap-6">
+    <Stagger delay={0.12} className="3xl:flex-row 3xl:items-start flex flex-col gap-6">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <StaggerItem>
           <Card title="지원 자격" description="학교 공식 기준">
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Panel className="flex flex-1 flex-col gap-2">
                 <p className="text-ink-muted text-[18px] font-medium">학점 기준</p>
                 <p className="text-[26px] font-bold">{info.gpaCriterion ?? '-'}</p>
@@ -69,7 +69,7 @@ export default function OfficialTab({ info }: { info: OfficialInfo }) {
                   {info.summary ?? '아직 정리된 공식 자료가 없어요.'}
                 </p>
               </Panel>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {info.sourceUrl && (
                   <a
                     href={info.sourceUrl}
@@ -92,7 +92,7 @@ export default function OfficialTab({ info }: { info: OfficialInfo }) {
         </StaggerItem>
       </div>
 
-      <div className="flex w-[600px] shrink-0 flex-col gap-6">
+      <div className="3xl:w-[600px] 3xl:shrink-0 flex flex-col gap-6">
         <StaggerItem>
           <Card
             title="내 자격 판정 결과"
@@ -101,15 +101,17 @@ export default function OfficialTab({ info }: { info: OfficialInfo }) {
             }
           >
             <div className="flex flex-col gap-5">
-              <div className={`rounded-panel flex items-center gap-4 p-5 ${judgment.box}`}>
+              <div className={`rounded-panel flex items-center gap-4 p-4 sm:p-5 ${judgment.box}`}>
                 <div
                   className={`flex size-[53px] shrink-0 items-center justify-center rounded-full text-white ${judgment.circle}`}
                 >
                   <Icon name={judgment.icon} size={29} />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-[28px] font-bold">{judgment.label}</p>
-                  <p className="text-[18px] font-medium">사유: {info.judgment.reason}</p>
+                  <p className="text-[24px] font-bold sm:text-[28px]">{judgment.label}</p>
+                  <p className="text-[16px] font-medium sm:text-[18px]">
+                    사유: {info.judgment.reason}
+                  </p>
                 </div>
               </div>
 
@@ -140,13 +142,15 @@ export default function OfficialTab({ info }: { info: OfficialInfo }) {
 
         {info.courseListUrl && (
           <StaggerItem>
-            <Card className="flex items-center gap-4">
+            <Card className="flex flex-wrap items-center gap-4">
               <div className="bg-accent-soft text-primary flex size-[58px] shrink-0 items-center justify-center rounded-[19px]">
                 <Icon name="book" size={29} />
               </div>
-              <div className="flex flex-1 flex-col gap-1">
-                <h2 className="text-[26px] font-bold">강의 목록</h2>
-                <p className="text-ink-muted text-[18px]">학교 공식 강의목록 페이지</p>
+              <div className="flex min-w-[180px] flex-1 flex-col gap-1">
+                <h2 className="text-[22px] font-bold sm:text-[26px]">강의 목록</h2>
+                <p className="text-ink-muted text-[16px] sm:text-[18px]">
+                  학교 공식 강의목록 페이지
+                </p>
               </div>
               <a
                 href={info.courseListUrl}
