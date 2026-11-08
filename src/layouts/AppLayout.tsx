@@ -25,8 +25,8 @@ export default function AppLayout() {
         style={{ backgroundImage: `url("${bgTile}")` }}
       />
       <Sidebar />
-      <main className="flex-1 px-14 py-11">
-        {/* 탭(?tab=) 이동은 제외하려고 pathname만 key로 사용 */}
+      <main className="min-w-0 flex-1 px-14 py-11">
+        {/* 탭(?tab=) 이동은 제외,pathname만 key로 사용 */}
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0, y: 8 }}
