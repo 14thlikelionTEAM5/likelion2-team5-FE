@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { PATHS } from '@/app/paths';
+import Breadcrumb from '@/shared/ui/Breadcrumb';
 import EmptyState from '@/shared/ui/EmptyState';
 import Button from '@/shared/ui/Button';
 import Icon from '@/shared/ui/Icon';
@@ -67,15 +69,18 @@ export default function SchoolListPage() {
     <Stagger className="flex flex-col gap-8">
       <StaggerItem className="flex items-end">
         <div className="flex flex-1 flex-col gap-1.5">
-          <p className="text-ink-muted text-[18px] font-medium">협정교 › 협정교 목록</p>
+          <Breadcrumb items={[{ label: '협정교', to: PATHS.schools }, { label: '협정교 목록' }]} />
           <h1 className="text-[38px] font-bold">협정교 목록</h1>
         </div>
         <button
           type="button"
           onClick={reset}
-          className="text-primary flex h-[54px] items-center gap-2 px-1 text-[19px] font-semibold"
+          className="group text-primary hover:bg-primary-soft rounded-control flex h-[54px] items-center gap-2 px-4 text-[19px] font-semibold transition-[background-color,transform] active:scale-95"
         >
-          <Icon name="refresh" />
+          <Icon
+            name="refresh"
+            className="transition-transform duration-300 group-hover:-rotate-180"
+          />
           필터 초기화
         </button>
       </StaggerItem>
