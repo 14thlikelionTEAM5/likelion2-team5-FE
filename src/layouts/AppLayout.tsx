@@ -18,10 +18,12 @@ export default function AppLayout() {
   }
 
   return (
-    <div
-      className="bg-page flex min-h-screen bg-cover bg-fixed bg-center"
-      style={{ backgroundImage: `url("${bgTile}")` }}
-    >
+    <div className="bg-page relative isolate flex min-h-screen">
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center opacity-70"
+        style={{ backgroundImage: `url("${bgTile}")` }}
+      />
       <Sidebar />
       <main className="flex-1 px-14 py-11">
         {/* 탭(?tab=) 이동은 제외하려고 pathname만 key로 사용 */}
