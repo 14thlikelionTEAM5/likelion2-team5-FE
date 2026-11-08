@@ -9,11 +9,11 @@ import Card from '@/shared/ui/Card';
 import Icon from '@/shared/ui/Icon';
 import InfoNote from '@/shared/ui/InfoNote';
 import Modal from '@/shared/ui/Modal';
-import Placeholder from '@/shared/ui/Placeholder';
 import Segment from '@/shared/ui/Segment';
 import Select from '@/shared/ui/Select';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import CompleteModal from '../components/CompleteModal';
+import CreditFormFields from '../components/CreditFormFields';
 import ConsentModal from '../components/ConsentModal';
 import ExperienceHeader from '../components/ExperienceHeader';
 import KindSelector from '../components/KindSelector';
@@ -23,14 +23,19 @@ import SchoolSearch from '../components/SchoolSearch';
 import SpecFormFields from '../components/SpecFormFields';
 import StepTitle from '../components/StepTitle';
 import {
+  EMPTY_CREDIT,
   EMPTY_REPORT,
   emptySpec,
   extractReport,
   findDuplicate,
+  getMyReportCourses,
   getSchoolOption,
   hasConsented,
+  isCreditInRange,
   MY_CONDITION,
+  needsHomeCourse,
   saveConsent,
+  type CreditForm,
   type ReportForm,
   type SchoolOption,
   type SpecForm,
@@ -75,8 +80,18 @@ export default function ExperienceNewPage() {
   const [spec, setSpec] = useState<SpecForm>(emptySpec);
   const [specTouched, setSpecTouched] = useState(false);
 
+  const [credit, setCredit] = useState<CreditForm>(EMPTY_CREDIT);
+  const [creditTouched, setCreditTouched] = useState(false);
+  // TODO: 내 귀국보고서 조회 API 연결
+  const reportCourses = school ? getMyReportCourses(school.universityId) : [];
+  const noReport = kind === 'credit' && !!school && reportCourses.length === 0;
+
   const dirty =
-    !completeOpen && (text.length > 0 || phase === 'review' || (kind === 'spec' && specTouched));
+    !completeOpen &&
+    (text.length > 0 ||
+      phase === 'review' ||
+      (kind === 'spec' && specTouched) ||
+      (kind === 'credit' && creditTouched));
   const blocker = useLeaveConfirm(dirty);
 
   // TODO: /experiences/check-duplicate 연결
@@ -92,6 +107,8 @@ export default function ExperienceNewPage() {
     setForm(EMPTY_REPORT);
     setSpec(emptySpec());
     setSpecTouched(false);
+    setCredit(EMPTY_CREDIT);
+    setCreditTouched(false);
     setError('');
   };
 
@@ -111,7 +128,13 @@ export default function ExperienceNewPage() {
     if (!school) return setError('학교를 선택해 주세요');
     if (kind === 'spec' && MY_CONDITION.scores.length > 0 && !spec.exam)
       return setError('어학 성적을 골라 주세요');
-    // TODO: report → /return-reports (원문 text는 보내지 않음), spec → /admission-reports
+    if (kind === 'credit') {
+      if (!credit.courseKey) return setError('대상 과목을 골라 주세요');
+      if (needsHomeCourse(credit.creditType) && !credit.homeCourse)
+        return setError('본교 인정 과목을 골라 주세요');
+      if (!isCreditInRange(credit.credits)) return setError('인정 학점을 확인해 주세요');
+    }
+    // TODO: report → /return-reports (원문 text는 보내지 않음), spec → /admission-reports, credit → /credit-cases
     setError('');
     setCompleteOpen(true);
   };
@@ -151,7 +174,14 @@ export default function ExperienceNewPage() {
           <div className="flex items-start gap-3">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <span className="text-ink-sub text-[18px] font-semibold">학교</span>
-              <SchoolSearch value={school} onChange={setSchool} />
+              <SchoolSearch
+                value={school}
+                onChange={(s) => {
+                  setSchool(s);
+                  setCredit((c) => ({ ...c, courseKey: '' }));
+                  setError('');
+                }}
+              />
               <Hint>협정교 상세에서 들어오면 학교가 자동으로 선택돼요</Hint>
             </div>
             <div className="flex flex-col gap-2">
@@ -176,7 +206,7 @@ export default function ExperienceNewPage() {
       <StaggerItem>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={duplicate ? 'dup' : `${kind}-${phase}`}
+            key={duplicate ? 'dup' : `${kind}-${phase}-${noReport ? 'empty' : ''}`}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -211,9 +241,40 @@ export default function ExperienceNewPage() {
                 />
                 {saveRow('저장하면 입력값을 확인한 뒤 등록돼요')}
               </Card>
+            ) : noReport ? (
+              <Card className="flex flex-col gap-5">
+                <StepTitle no={3}>학점 인정 결과 입력</StepTitle>
+                <InfoNote tone="primary">
+                  이 학교의 귀국보고서가 없어서 고를 수강 교과목이 없어요. 귀국보고서를 먼저
+                  등록하면 수강 교과목에서 골라 인정 결과를 남길 수 있어요.
+                </InfoNote>
+                <Button
+                  variant="secondary"
+                  icon="file"
+                  className="self-start"
+                  onClick={() => {
+                    const next = new URLSearchParams(params);
+                    next.set('type', 'report');
+                    setParams(next, { replace: true });
+                  }}
+                >
+                  귀국보고서 먼저 등록하기
+                </Button>
+              </Card>
             ) : kind === 'credit' ? (
-              // TODO: #15 학점 인정 결과
-              <Placeholder title={KIND_LABEL[kind]} owner="윤지" />
+              <Card className="flex flex-col gap-7">
+                <StepTitle no={3}>학점 인정 결과 입력</StepTitle>
+                <CreditFormFields
+                  value={credit}
+                  courses={reportCourses}
+                  onChange={(v) => {
+                    setCredit(v);
+                    setCreditTouched(true);
+                    setError('');
+                  }}
+                />
+                {saveRow('저장하면 입력값을 확인한 뒤 등록돼요')}
+              </Card>
             ) : phase === 'paste' ? (
               <Card className="flex flex-col gap-6">
                 <StepTitle
