@@ -3,11 +3,11 @@ import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { PATHS, type SchoolTab } from '@/app/paths';
 import Button from '@/shared/ui/Button';
 import EmptyState from '@/shared/ui/EmptyState';
-import Placeholder from '@/shared/ui/Placeholder';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Tabs from '@/shared/ui/Tabs';
 import CoursesTab from '../components/CoursesTab';
 import OfficialTab from '../components/OfficialTab';
+import ReportsTab from '../components/ReportsTab';
 import SchoolHeader from '../components/SchoolHeader';
 import SpecTab from '../components/SpecTab';
 import {
@@ -15,15 +15,16 @@ import {
   getMockCourseCases,
   getMockCourses,
   getMockOfficial,
+  getMockReturnReports,
   getMockSchool,
   MOCK_ME,
 } from '../mock';
 
-const TABS: { value: SchoolTab; label: string; figma: string }[] = [
-  { value: 'official', label: '공식 정보', figma: '학교 상세 - 공식 정보' },
-  { value: 'spec', label: '합격 스펙', figma: '학교 상세 - 합격 스펙' },
-  { value: 'courses', label: '과목/인정 사례', figma: '학교 상세 - 과목·인정 사례' },
-  { value: 'reports', label: '귀국보고서', figma: '학교 상세 - 귀국보고서' },
+const TABS: { value: SchoolTab; label: string }[] = [
+  { value: 'official', label: '공식 정보' },
+  { value: 'spec', label: '합격 스펙' },
+  { value: 'courses', label: '과목/인정 사례' },
+  { value: 'reports', label: '귀국보고서' },
 ];
 
 export default function SchoolDetailPage() {
@@ -48,7 +49,6 @@ export default function SchoolDetailPage() {
   const tab = school.hasExperience
     ? (TABS.find((t) => t.value === params.get('tab'))?.value ?? 'official')
     : 'official';
-  const current = TABS.find((t) => t.value === tab)!;
 
   return (
     <Stagger className="flex flex-col gap-8">
@@ -81,16 +81,7 @@ export default function SchoolDetailPage() {
           cases={getMockCourseCases(school.universityId)}
         />
       ) : (
-        // TODO: 나머지 탭은 각 이슈에서 구현
-        <Stagger key={tab} delay={0.12}>
-          <StaggerItem>
-            <Placeholder
-              title={current.label}
-              owner="윤지"
-              figma={`유윤지 - 디자인 / ${current.figma}`}
-            />
-          </StaggerItem>
-        </Stagger>
+        <ReportsTab key={tab} reports={getMockReturnReports(school.universityId)} />
       )}
     </Stagger>
   );
