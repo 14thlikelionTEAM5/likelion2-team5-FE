@@ -39,16 +39,21 @@ function Hint({ icon = 'info', children }: { icon?: 'info' | 'lock'; children: s
   );
 }
 
+export type SpecCondition = typeof MY_CONDITION;
+
+// condition: 수정 폼에서는 등록 당시 값
 export default function SpecFormFields({
   value,
   onChange,
+  condition = MY_CONDITION,
 }: {
   value: SpecForm;
   onChange: (value: SpecForm) => void;
+  condition?: SpecCondition;
 }) {
   const set = <K extends keyof SpecForm>(key: K, v: SpecForm[K]) =>
     onChange({ ...value, [key]: v });
-  const score = MY_CONDITION.scores.find((s) => s.exam === value.exam)?.score;
+  const score = condition.scores.find((s) => s.exam === value.exam)?.score;
 
   return (
     <div className="flex flex-col gap-7">
@@ -65,8 +70,8 @@ export default function SpecFormFields({
             placeholder="내 지원 조건에서 선택"
             value={value.exam}
             onChange={(v) => set('exam', v)}
-            disabled={MY_CONDITION.scores.length === 0}
-            options={MY_CONDITION.scores.map((s) => ({ value: s.exam, label: examLabel(s.exam) }))}
+            disabled={condition.scores.length === 0}
+            options={condition.scores.map((s) => ({ value: s.exam, label: examLabel(s.exam) }))}
           />
           <Hint>가입 정보에 1개면 자동으로 채워져요. 0개면 비워둘 수 있어요.</Hint>
         </Field>
@@ -86,7 +91,7 @@ export default function SpecFormFields({
           <Input
             aria-label="누적 학점"
             disabled
-            value={`${MY_CONDITION.gpa.toFixed(1)} / 4.5`}
+            value={`${condition.gpa.toFixed(1)} / 4.5`}
             readOnly
           />
           <Hint icon="lock">자동 입력 · 수정 불가</Hint>
@@ -95,7 +100,7 @@ export default function SpecFormFields({
           <Input
             aria-label="전공 구분"
             disabled
-            value={MAJOR_TYPE_LABEL[MY_CONDITION.majorType]}
+            value={MAJOR_TYPE_LABEL[condition.majorType]}
             readOnly
           />
           <Hint icon="lock">마이페이지 정보 자동 표시 · 수정 불가</Hint>

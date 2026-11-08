@@ -54,15 +54,17 @@ export type MySpec = Term & {
   score: number;
   gpa: number;
   majorType: MajorType;
+  note: string;
 };
 
-export type MyReport = Term & { fields: string[]; summary: string };
+export type MyReport = Term & { form: ReportForm };
 
 export type MyCredit = Term & {
   reportId: number;
+  courseKey: number; // 귀국보고서 수강 교과목의 key
   foreignCourse: string;
   creditType: CreditType;
-  homeCourse?: string;
+  homeCourse?: HomeCourse;
   credits: number;
 };
 
@@ -80,6 +82,7 @@ const MY: MyExperiences = {
       score: 100,
       gpa: 3.8,
       majorType: 'PRIMARY',
+      note: '',
     },
     {
       id: 2,
@@ -88,9 +91,10 @@ const MY: MyExperiences = {
       semester: 2,
       result: 'FAIL',
       exam: 'IELTS',
-      score: 6.5,
-      gpa: 3.5,
+      score: 7.0,
+      gpa: 3.8,
       majorType: 'PRIMARY',
+      note: '면접 있음',
     },
   ],
   report: [
@@ -99,17 +103,43 @@ const MY: MyExperiences = {
       universityId: 1,
       year: 2026,
       semester: 1,
-      fields: ['비용', '숙소', '비자', '보험'],
-      summary:
-        '기숙사는 학교 근처라 통학이 편했고, 수업은 토론과 팀 과제 비중이 높았어요. 물가가 높아 장보기 위주로 생활비를 아꼈어요.',
+      form: {
+        flight: '왕복 약 130만 원',
+        insurance: '약 300유로',
+        monthlyLiving: '월 1,000유로',
+        total: '약 900만 원',
+        insurancePlace: '학교 단체보험',
+        visaPeriod: '약 3주',
+        visaType: '거주 허가(MVV)',
+        housing: 'DORM',
+        courses: [
+          { key: 1, code: 'MKT201', name: 'Marketing 201', credits: '6 ECTS', rating: 4 },
+          { key: 2, code: 'FIN301', name: 'Corporate Finance', credits: '6 ECTS', rating: 3 },
+        ],
+        summary:
+          '기숙사는 학교 근처라 통학이 편했고, 수업은 토론과 팀 과제 비중이 높았어요. 물가가 높아 장보기 위주로 생활비를 아꼈어요.',
+      },
     },
     {
       id: 2,
       universityId: 2,
       year: 2025,
       semester: 2,
-      fields: ['비용', '숙소'],
-      summary: '자취를 했고 학교까지 버스로 20분 걸렸어요. 시험은 대부분 기말 한 번이었어요.',
+      form: {
+        flight: '왕복 약 150만 원',
+        insurance: '',
+        monthlyLiving: '월 1,800호주달러',
+        total: '',
+        insurancePlace: '',
+        visaPeriod: '',
+        visaType: '',
+        housing: 'OFF_CAMPUS',
+        courses: [
+          { key: 3, code: 'MGT210', name: 'Organizational Behaviour', credits: '6 CP', rating: 5 },
+          { key: 4, code: 'ACC101', name: 'Accounting Basics', credits: '6 CP', rating: 3 },
+        ],
+        summary: '자취를 했고 학교까지 버스로 20분 걸렸어요. 시험은 대부분 기말 한 번이었어요.',
+      },
     },
   ],
   credit: [
@@ -119,9 +149,10 @@ const MY: MyExperiences = {
       universityId: 1,
       year: 2026,
       semester: 1,
+      courseKey: 1,
       foreignCourse: 'Marketing 201',
       creditType: 'MAJOR_ELECTIVE',
-      homeCourse: '마케팅원론',
+      homeCourse: { courseId: 1, code: 'B01101', name: '마케팅원론' },
       credits: 3,
     },
     {
@@ -130,6 +161,7 @@ const MY: MyExperiences = {
       universityId: 1,
       year: 2026,
       semester: 1,
+      courseKey: 2,
       foreignCourse: 'Corporate Finance',
       creditType: 'GENERAL',
       credits: 3,
@@ -140,12 +172,22 @@ const MY: MyExperiences = {
       universityId: 2,
       year: 2025,
       semester: 2,
+      courseKey: 3,
       foreignCourse: 'Organizational Behaviour',
       creditType: 'FREE_ELECTIVE',
       credits: 2,
     },
   ],
 };
+
+// 목록의 '구조화 항목' 칸
+export const reportFields = (f: ReportForm) =>
+  [
+    [f.flight, f.insurance, f.monthlyLiving, f.total].some(Boolean) && '비용',
+    '숙소',
+    (f.visaPeriod || f.visaType) && '비자',
+    f.insurancePlace && '보험',
+  ].filter(Boolean) as string[];
 
 export const getMyExperiences = (): MyExperiences => ({
   spec: [...MY.spec],
@@ -305,4 +347,39 @@ export const needsHomeCourse = (t: CreditType) => t === 'MAJOR_REQUIRED' || t ==
 export const isCreditInRange = (v: string) => {
   const n = Number(v);
   return v.trim() !== '' && Number.isFinite(n) && n > 0 && n <= MAX_CREDITS;
+};
+
+export const creditError = (f: CreditForm) => {
+  if (!f.courseKey) return '대상 과목을 골라 주세요';
+  if (needsHomeCourse(f.creditType) && !f.homeCourse) return '본교 인정 과목을 골라 주세요';
+  if (!isCreditInRange(f.credits)) return '인정 학점을 확인해 주세요';
+  return '';
+};
+
+// 수정 폼 (/experiences/{kind}/{id})
+export const getMySpec = (id: number) => MY.spec.find((e) => e.id === id) ?? null;
+export const getMyReport = (id: number) => MY.report.find((e) => e.id === id) ?? null;
+export const getMyCredit = (id: number) => MY.credit.find((e) => e.id === id) ?? null;
+
+export const updateSpec = (id: number, f: SpecForm, score: number) => {
+  MY.spec = MY.spec.map((e) => (e.id === id ? { ...e, ...f, score } : e));
+};
+
+export const updateReport = (id: number, form: ReportForm) => {
+  MY.report = MY.report.map((e) => (e.id === id ? { ...e, form } : e));
+};
+
+export const updateCredit = (id: number, f: CreditForm, foreignCourse: string) => {
+  MY.credit = MY.credit.map((e) =>
+    e.id === id
+      ? {
+          ...e,
+          courseKey: Number(f.courseKey),
+          foreignCourse,
+          creditType: f.creditType,
+          homeCourse: f.homeCourse ?? undefined,
+          credits: Number(f.credits),
+        }
+      : e,
+  );
 };
