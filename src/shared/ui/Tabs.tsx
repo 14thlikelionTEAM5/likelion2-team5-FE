@@ -14,7 +14,10 @@ export default function Tabs<T extends string>({
 }) {
   const id = useId();
   return (
-    <div role="tablist" className="border-line-soft flex gap-9 border-b">
+    <div
+      role="tablist"
+      className="border-line-soft flex scrollbar-none gap-6 overflow-x-auto border-b sm:gap-9"
+    >
       {items.map((item) => {
         const active = item.value === value;
         return (
@@ -24,7 +27,7 @@ export default function Tabs<T extends string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(item.value)}
-            className={`flex flex-col gap-3 pt-1 text-[22px] whitespace-nowrap transition-colors ${
+            className={`flex flex-col gap-3 pt-1 text-[19px] whitespace-nowrap transition-colors sm:text-[22px] ${
               active ? 'text-primary font-bold' : 'text-ink-muted hover:text-ink-sub font-semibold'
             }`}
           >

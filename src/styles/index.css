@@ -67,3 +67,11 @@ body {
     scrollbar-color: var(--color-line) transparent;
   }
 }
+
+/* 탭처럼 가로로 넘칠 때 스크롤바 숨김 */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
