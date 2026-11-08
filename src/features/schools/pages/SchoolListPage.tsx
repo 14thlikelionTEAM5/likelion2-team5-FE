@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import EmptyState from '@/shared/ui/EmptyState';
 import Button from '@/shared/ui/Button';
 import Icon from '@/shared/ui/Icon';
 import Select from '@/shared/ui/Select';
+import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import SchoolCard from '../components/SchoolCard';
 import SchoolFilterCard from '../components/SchoolFilterCard';
 import { MOCK_SCHOOLS, type SchoolSummary } from '../mock';
@@ -55,9 +57,15 @@ export default function SchoolListPage() {
       prev.map((s) => (s.universityId === id ? { ...s, bookmarked: !s.bookmarked } : s)),
     );
 
+  // 처음 들어올 때만 카드가 차례로 나오고, 필터로 바뀔 때는 바뀐 카드만 움직임
+  const firstRender = useRef(true);
+  useEffect(() => {
+    firstRender.current = false;
+  }, []);
+
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex items-end">
+    <Stagger className="flex flex-col gap-8">
+      <StaggerItem className="flex items-end">
         <div className="flex flex-1 flex-col gap-1.5">
           <p className="text-ink-muted text-[18px] font-medium">협정교 › 협정교 목록</p>
           <h1 className="text-[38px] font-bold">협정교 목록</h1>
@@ -70,44 +78,76 @@ export default function SchoolListPage() {
           <Icon name="refresh" />
           필터 초기화
         </button>
-      </header>
+      </StaggerItem>
 
-      <SchoolFilterCard filters={filters} countries={countries} onChange={setFilter} />
+      <StaggerItem>
+        <SchoolFilterCard filters={filters} countries={countries} onChange={setFilter} />
+      </StaggerItem>
 
-      <div className="flex items-center gap-2.5">
+      <StaggerItem className="flex items-center gap-2.5">
         <h2 className="text-[26px] font-bold">협정교 목록</h2>
-        <span className="text-accent text-[19px] font-semibold">{result.length}곳</span>
+        <motion.span
+          key={result.length}
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-accent text-[19px] font-semibold"
+        >
+          {result.length}곳
+        </motion.span>
         <div className="flex-1" />
         <Select
           size="sm"
           className="w-[230px]"
           value={filters.sort}
-          onChange={(e) => setFilter('sort', e.target.value as SchoolSort)}
+          onChange={(v) => setFilter('sort', v as SchoolSort)}
           options={SORT_OPTIONS}
         />
-      </div>
+      </StaggerItem>
 
-      {result.length > 0 ? (
-        <div className="flex flex-col gap-3">
-          {result.map((s) => (
-            <SchoolCard
-              key={s.universityId}
-              school={s}
-              onToggleBookmark={() => toggleBookmark(s.universityId)}
+      <AnimatePresence mode="wait">
+        {result.length > 0 ? (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col gap-3"
+          >
+            <AnimatePresence mode="popLayout">
+              {result.map((s, i) => (
+                <motion.div
+                  key={s.universityId}
+                  layout
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  transition={{ duration: 0.25, delay: firstRender.current ? 0.18 + i * 0.06 : 0 }}
+                >
+                  <SchoolCard school={s} onToggleBookmark={() => toggleBookmark(s.universityId)} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <EmptyState
+              title="조건에 맞는 학교가 없어요"
+              description="검색어나 필터를 바꾸거나 필터를 초기화해 보세요."
+              action={
+                <Button variant="secondary" icon="refresh" onClick={reset}>
+                  필터 초기화
+                </Button>
+              }
             />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          title="조건에 맞는 학교가 없어요"
-          description="검색어나 필터를 바꾸거나 필터를 초기화해 보세요."
-          action={
-            <Button variant="secondary" icon="refresh" onClick={reset}>
-              필터 초기화
-            </Button>
-          }
-        />
-      )}
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Stagger>
   );
 }
