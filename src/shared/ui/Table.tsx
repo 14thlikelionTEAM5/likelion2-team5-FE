@@ -18,45 +18,48 @@ export default function Table<T>({
   rowKey: (row: T) => string | number;
 }) {
   return (
-    <table className="w-full table-fixed border-collapse text-left">
-      <colgroup>
-        {columns.map((c) => (
-          <col key={c.key} style={c.width ? { width: c.width } : undefined} />
-        ))}
-      </colgroup>
-      <thead>
-        <tr>
+    // 좁은 화면에서는 표만 가로로 스크롤
+    <div className="-mx-1 overflow-x-auto px-1">
+      <table className="w-full min-w-[720px] table-fixed border-collapse text-left">
+        <colgroup>
           {columns.map((c) => (
-            <th
-              key={c.key}
-              className="bg-table-head text-ink-muted first:rounded-l-small last:rounded-r-small px-4 py-3 text-base font-semibold"
-            >
-              {c.header}
-            </th>
+            <col key={c.key} style={c.width ? { width: c.width } : undefined} />
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {/* 행이 추가·삭제될 때만 애니메이션 */}
-        <AnimatePresence initial={false}>
-          {rows.map((row) => (
-            <motion.tr
-              key={rowKey(row)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, x: 24 }}
-              transition={{ duration: 0.2 }}
-              className="border-fill border-b"
-            >
-              {columns.map((c) => (
-                <td key={c.key} className="px-4 py-3.5 text-lg">
-                  {c.render(row)}
-                </td>
-              ))}
-            </motion.tr>
-          ))}
-        </AnimatePresence>
-      </tbody>
-    </table>
+        </colgroup>
+        <thead>
+          <tr>
+            {columns.map((c) => (
+              <th
+                key={c.key}
+                className="bg-table-head text-ink-muted first:rounded-l-small last:rounded-r-small px-4 py-3 text-base font-semibold"
+              >
+                {c.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {/* 행이 추가·삭제될 때만 애니메이션 */}
+          <AnimatePresence initial={false}>
+            {rows.map((row) => (
+              <motion.tr
+                key={rowKey(row)}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, x: 24 }}
+                transition={{ duration: 0.2 }}
+                className="border-fill border-b"
+              >
+                {columns.map((c) => (
+                  <td key={c.key} className="px-4 py-3.5 text-lg">
+                    {c.render(row)}
+                  </td>
+                ))}
+              </motion.tr>
+            ))}
+          </AnimatePresence>
+        </tbody>
+      </table>
+    </div>
   );
 }

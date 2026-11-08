@@ -16,7 +16,10 @@ export default function Segment<T extends string>({
 }) {
   const id = useId();
   return (
-    <div role="radiogroup" className="bg-fill rounded-control inline-flex shrink-0 gap-1 p-1">
+    <div
+      role="radiogroup"
+      className="bg-fill rounded-control inline-flex max-w-full shrink-0 gap-1 overflow-x-auto p-1"
+    >
       {items.map((item) => {
         const active = item.value === value;
         return (
@@ -27,7 +30,7 @@ export default function Segment<T extends string>({
             aria-checked={active}
             disabled={disabled}
             onClick={() => onChange(item.value)}
-            className={`relative h-[46px] rounded-[9px] px-5 text-[19px] font-semibold whitespace-nowrap transition-colors ${
+            className={`relative h-[46px] rounded-[9px] px-4 text-[17px] font-semibold whitespace-nowrap transition-colors sm:px-5 sm:text-[19px] ${
               active ? 'text-primary' : 'text-ink-muted enabled:hover:text-ink-sub'
             }`}
           >
