@@ -11,8 +11,8 @@ export default function StatBox({
     <div
       className={`rounded-note bg-panel flex min-w-0 flex-1 flex-col gap-1 ${large ? 'px-5 py-3.5' : 'p-4'}`}
     >
-      <p className="text-ink-muted text-[16px] font-medium">{label}</p>
-      <p className={`font-bold ${large ? 'text-[26px]' : 'text-[18px]'}`}>{value}</p>
+      <p className="text-ink-muted truncate text-[15px] font-medium sm:text-[16px]">{label}</p>
+      <p className={`font-bold ${large ? 'text-[22px] sm:text-[26px]' : 'text-[18px]'}`}>{value}</p>
     </div>
   );
 }

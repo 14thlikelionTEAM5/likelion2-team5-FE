@@ -15,9 +15,9 @@ export default function CardHeading({
       <div className="bg-accent-soft text-primary flex size-[58px] shrink-0 items-center justify-center rounded-[19px]">
         <Icon name={icon} size={29} />
       </div>
-      <div className="flex flex-col gap-1">
-        <h2 className="text-[26px] font-bold">{title}</h2>
-        <p className="text-ink-muted text-[18px]">{description}</p>
+      <div className="flex min-w-0 flex-col gap-1">
+        <h2 className="text-[22px] font-bold sm:text-[26px]">{title}</h2>
+        <p className="text-ink-muted text-[16px] sm:text-[18px]">{description}</p>
       </div>
     </div>
   );

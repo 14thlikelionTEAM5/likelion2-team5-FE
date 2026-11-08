@@ -30,13 +30,13 @@ export default function MyConditionCard({
         </Button>
       }
     >
-      <div className="flex gap-4">
-        <Panel className="flex flex-1 flex-col gap-2.5">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Panel className="flex flex-col gap-2.5">
           <Label>전공 구분</Label>
           <p className="text-[28px] font-bold">{MAJOR_TYPE_LABEL[majorType]}</p>
         </Panel>
 
-        <Panel className="flex flex-1 flex-col gap-2.5">
+        <Panel className="flex flex-col gap-2.5">
           <Label>누적 학점</Label>
           <p className="flex items-end gap-1.5">
             <span className="text-[28px] font-bold">{gpa.toFixed(1)}</span>
@@ -50,7 +50,7 @@ export default function MyConditionCard({
           </div>
         </Panel>
 
-        <Panel className="flex flex-1 flex-col gap-2.5">
+        <Panel className="flex flex-col gap-2.5">
           <Label>어학 시험</Label>
           {languageScores.length > 0 ? (
             <div className="flex flex-wrap gap-2">
