@@ -91,7 +91,13 @@ function useMore<T>(rows: T[]) {
   return { shown: expanded ? rows : rows.slice(0, PREVIEW_COUNT), button };
 }
 
-export default function ReportsTab({ reports }: { reports: ReturnReport[] }) {
+export default function ReportsTab({
+  universityId,
+  reports,
+}: {
+  universityId: number;
+  reports: ReturnReport[];
+}) {
   const navigate = useNavigate();
   const cost = useMore(reports);
   const visa = useMore(reports);
@@ -106,7 +112,10 @@ export default function ReportsTab({ reports }: { reports: ReturnReport[] }) {
             title="아직 경험이 없어요"
             description="첫 경험을 등록해 주세요"
             action={
-              <Button icon="pen" onClick={() => navigate(PATHS.experienceNew('report'))}>
+              <Button
+                icon="pen"
+                onClick={() => navigate(PATHS.experienceNew('report', universityId))}
+              >
                 경험 등록하기
               </Button>
             }

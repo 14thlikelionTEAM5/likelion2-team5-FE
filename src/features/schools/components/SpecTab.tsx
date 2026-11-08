@@ -27,14 +27,16 @@ const PREVIEW_COUNT = 3;
 const examLabel = (v: string) => LANGUAGE_EXAMS.find((e) => e.value === v)?.label ?? v;
 
 export default function SpecTab({
+  universityId,
   reports,
   me,
 }: {
+  universityId: number;
   reports: AdmissionReport[];
   me: { gpa?: number; scores: Record<string, number> };
 }) {
   const navigate = useNavigate();
-  const goRegister = () => navigate(PATHS.experienceNew('spec'));
+  const goRegister = () => navigate(PATHS.experienceNew('spec', universityId));
 
   const passes = reports.filter((r) => r.result === 'PASS');
   const examsWithPass = LANGUAGE_EXAMS.filter((e) => passes.some((r) => r.exam === e.value));

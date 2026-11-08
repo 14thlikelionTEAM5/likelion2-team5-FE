@@ -12,7 +12,13 @@ export const PATHS = {
     `/schools/${universityId}${tab ? `?tab=${tab}` : ''}`,
   favorites: '/schools/favorites',
 
-  experienceNew: (kind?: ExperienceKind) => `/experience/new${kind ? `?type=${kind}` : ''}`,
+  // universityId를 넘기면 학교가 미리 선택됨 (협정교 상세에서 들어올 때)
+  experienceNew: (kind?: ExperienceKind, universityId?: number) => {
+    const q = new URLSearchParams();
+    if (kind) q.set('type', kind);
+    if (universityId) q.set('universityId', String(universityId));
+    return `/experience/new${q.size ? `?${q}` : ''}`;
+  },
   experienceMine: '/experience/mine',
   experienceEdit: (kind: ExperienceKind, id: number | string) => `/experience/edit/${kind}/${id}`,
 
