@@ -1,3 +1,6 @@
+import { useId } from 'react';
+import { motion } from 'motion/react';
+
 export type SegmentItem<T extends string> = { value: T; label: string };
 
 export default function Segment<T extends string>({
@@ -11,6 +14,7 @@ export default function Segment<T extends string>({
   onChange: (value: T) => void;
   disabled?: boolean;
 }) {
+  const id = useId();
   return (
     <div role="radiogroup" className="bg-fill rounded-control inline-flex shrink-0 gap-1 p-1">
       {items.map((item) => {
@@ -23,13 +27,19 @@ export default function Segment<T extends string>({
             aria-checked={active}
             disabled={disabled}
             onClick={() => onChange(item.value)}
-            className={`h-[46px] rounded-[9px] px-5 text-[19px] font-semibold whitespace-nowrap transition-colors ${
-              active
-                ? 'shadow-thumb text-primary bg-white'
-                : 'text-ink-muted enabled:hover:text-ink-sub'
+            className={`relative h-[46px] rounded-[9px] px-5 text-[19px] font-semibold whitespace-nowrap transition-colors ${
+              active ? 'text-primary' : 'text-ink-muted enabled:hover:text-ink-sub'
             }`}
           >
-            {item.label}
+            {active && (
+              <motion.span
+                layoutId={`segment-thumb-${id}`}
+                layoutDependency={value}
+                className="shadow-thumb absolute inset-0 rounded-[9px] bg-white"
+                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+              />
+            )}
+            <span className="relative">{item.label}</span>
           </button>
         );
       })}
