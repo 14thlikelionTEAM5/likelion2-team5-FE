@@ -13,13 +13,13 @@ export default function ExperienceHeader({
   description?: string;
 }) {
   return (
-    <header className="relative flex h-[150px] items-end">
+    <header className="relative flex items-end lg:h-[150px]">
       <div className="flex flex-col gap-1.5">
         <Breadcrumb items={breadcrumb} />
-        <h1 className="text-[38px] font-bold">{title}</h1>
-        <p className="text-ink-muted text-[19px]">{description}</p>
+        <h1 className="text-[30px] font-bold sm:text-[38px]">{title}</h1>
+        <p className="text-ink-muted text-[17px] sm:text-[19px]">{description}</p>
       </div>
-      <div aria-hidden className="absolute -top-4 right-0 w-[411px]">
+      <div aria-hidden className="absolute -top-4 right-0 hidden w-[411px] 2xl:block">
         <img src={boardingPass} alt="" width={411} height={198} />
         {/* 학기는 마감일 상수를 따라감 */}
         <span className="text-ink-sub absolute top-[134px] left-[26px] origin-left rotate-[4deg] text-[12px] font-bold tracking-wide">

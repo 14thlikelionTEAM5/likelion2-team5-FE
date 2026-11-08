@@ -21,7 +21,7 @@ export default function KindSelector({
   onChange: (value: ExperienceKind) => void;
 }) {
   return (
-    <div role="radiogroup" className="flex gap-4">
+    <div role="radiogroup" className="grid gap-3 lg:grid-cols-3 lg:gap-4">
       {KINDS.map((k) => {
         const active = k.value === value;
         return (

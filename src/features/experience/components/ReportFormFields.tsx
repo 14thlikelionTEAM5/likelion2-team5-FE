@@ -26,7 +26,7 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-[20px] font-bold">{title}</h3>
         {hint && <span className="text-ink-muted text-[16px]">{hint}</span>}
         <div className="flex-1" />
@@ -91,7 +91,7 @@ export default function ReportFormFields({
         title="비용"
         hint="자유 텍스트로 입력해요 (예: 약 300유로, 월 1,000유로) · 통화 환산은 하지 않아요"
       >
-        <div className="flex gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Field label="항공">
             <Input
               aria-label="항공"
@@ -125,7 +125,7 @@ export default function ReportFormFields({
             />
           </Field>
         </div>
-        <div className="flex gap-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <Field label="보험 구입처">
             <Input
               aria-label="보험 구입처"
@@ -173,70 +173,73 @@ export default function ReportFormFields({
           </Button>
         }
       >
-        <div className="flex flex-col">
-          <div className="bg-table-head rounded-small text-ink-muted flex gap-3 px-4 py-3 text-[16px] font-semibold">
-            <span className="w-[190px]">교과목코드</span>
-            <span className="flex-1">영문 교과목명</span>
-            <span className="w-[150px]">외국 학점</span>
-            <span className="w-[150px]">수업 만족도</span>
-            <span className="w-11" />
-          </div>
-          <AnimatePresence initial={false}>
-            {value.courses.map((c) => (
-              <motion.div
-                key={c.key}
-                layout
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="border-fill overflow-hidden border-b"
-              >
-                <div className="flex items-center gap-3 px-1 py-2">
-                  <Input
-                    size="sm"
-                    className="w-[202px]"
-                    placeholder="입력"
-                    aria-label="교과목코드"
-                    value={c.code}
-                    onChange={(e) => setCourse(c.key, { code: e.target.value })}
-                  />
-                  <Input
-                    size="sm"
-                    className="flex-1"
-                    placeholder="입력"
-                    aria-label="영문 교과목명"
-                    value={c.name}
-                    onChange={(e) => setCourse(c.key, { name: e.target.value })}
-                  />
-                  <Input
-                    size="sm"
-                    className="w-[150px]"
-                    placeholder="입력"
-                    aria-label="외국 학점"
-                    value={c.credits}
-                    onChange={(e) => setCourse(c.key, { credits: e.target.value })}
-                  />
-                  <div className="w-[150px]">
-                    <Stars value={c.rating} onChange={(rating) => setCourse(c.key, { rating })} />
+        {/* 좁은 화면에서는 표만 가로로 스크롤 */}
+        <div className="flex min-w-0 flex-col overflow-x-auto">
+          <div className="flex min-w-[760px] flex-col xl:min-w-0">
+            <div className="bg-table-head rounded-small text-ink-muted flex gap-3 px-4 py-3 text-[16px] font-semibold">
+              <span className="w-[190px]">교과목코드</span>
+              <span className="flex-1">영문 교과목명</span>
+              <span className="w-[150px]">외국 학점</span>
+              <span className="w-[150px]">수업 만족도</span>
+              <span className="w-11" />
+            </div>
+            <AnimatePresence initial={false}>
+              {value.courses.map((c) => (
+                <motion.div
+                  key={c.key}
+                  layout
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="border-fill overflow-hidden border-b"
+                >
+                  <div className="flex items-center gap-3 px-1 py-2">
+                    <Input
+                      size="sm"
+                      className="w-[202px]"
+                      placeholder="입력"
+                      aria-label="교과목코드"
+                      value={c.code}
+                      onChange={(e) => setCourse(c.key, { code: e.target.value })}
+                    />
+                    <Input
+                      size="sm"
+                      className="flex-1"
+                      placeholder="입력"
+                      aria-label="영문 교과목명"
+                      value={c.name}
+                      onChange={(e) => setCourse(c.key, { name: e.target.value })}
+                    />
+                    <Input
+                      size="sm"
+                      className="w-[150px]"
+                      placeholder="입력"
+                      aria-label="외국 학점"
+                      value={c.credits}
+                      onChange={(e) => setCourse(c.key, { credits: e.target.value })}
+                    />
+                    <div className="w-[150px]">
+                      <Stars value={c.rating} onChange={(rating) => setCourse(c.key, { rating })} />
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="과목 삭제"
+                      onClick={() =>
+                        set(
+                          'courses',
+                          value.courses.filter((x) => x.key !== c.key),
+                        )
+                      }
+                      className="text-ink-muted hover:bg-panel hover:text-danger flex size-11 items-center justify-center rounded-[10px] transition-colors"
+                    >
+                      <Icon name="trash" size={20} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    aria-label="과목 삭제"
-                    onClick={() =>
-                      set(
-                        'courses',
-                        value.courses.filter((x) => x.key !== c.key),
-                      )
-                    }
-                    className="text-ink-muted hover:bg-panel hover:text-danger flex size-11 items-center justify-center rounded-[10px] transition-colors"
-                  >
-                    <Icon name="trash" size={20} />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
           {value.courses.length === 0 && (
             <p className="text-ink-muted py-5 text-center text-[17px]">
               추가 버튼으로 들은 과목을 넣어 주세요
