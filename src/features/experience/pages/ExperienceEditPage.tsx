@@ -73,7 +73,11 @@ export default function ExperienceEditPage() {
     <Stagger className="flex flex-col gap-8">
       <StaggerItem>
         <ExperienceHeader
-          breadcrumb="경험 등록 › 내 등록 내역 › 수정"
+          breadcrumb={[
+            { label: '경험 등록', to: PATHS.experienceNew() },
+            { label: '내 등록 내역', to: PATHS.experienceMine },
+            { label: '수정' },
+          ]}
           title={`${TITLE[kind]} 수정`}
           description="등록한 내용을 고치면 다른 지원자에게도 바로 반영돼요."
         />
