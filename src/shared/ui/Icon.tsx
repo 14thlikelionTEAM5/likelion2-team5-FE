@@ -15,6 +15,7 @@ const ICONS = {
     ],
   },
   right: { size: 22, d: ['M8.25 5.5L13.75 11L8.25 16.5'] },
+  menu: { size: 24, d: ['M4 7H20M4 12H20M4 17H20'] },
   pen: {
     size: 26,
     d: [

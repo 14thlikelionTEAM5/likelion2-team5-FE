@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
@@ -178,7 +179,8 @@ function UserCard({ onLogout }: { onLogout: () => void }) {
   );
 }
 
-export default function Sidebar() {
+// inDrawer: 스크롤되는 메뉴 안에서는 화면이 낮아도 D-day 카드를 보여줌
+function SidebarBody({ inDrawer = false }: { inDrawer?: boolean }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -190,34 +192,116 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="border-line-soft sticky top-0 h-screen w-80 shrink-0 overflow-hidden border-r bg-white">
-      <img
-        src={sidebarBg}
-        alt=""
-        className="pointer-events-none absolute inset-0 size-full object-cover object-bottom opacity-70"
-      />
-      <div className="short:gap-6 short:pt-7 short:pb-6 relative flex h-full flex-col justify-between gap-8 px-6 pt-10 pb-8">
-        <div className="short:gap-6 flex flex-col gap-9">
-          <Link
-            to={PATHS.home}
-            className="short:h-12 flex h-[60px] items-center justify-center pr-3"
-          >
-            <img src={logo} alt="PassHUFS" className="short:h-12 h-[60px] w-auto" />
-          </Link>
-          <nav className="isolate flex flex-col gap-1.5">
-            {MENU.map((item) => (
-              <MenuLink key={item.label} item={item} path={pathname} />
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="tiny:hidden">
-            <DdayCard />
-          </div>
-          <UserCard onLogout={logout} />
-        </div>
+    <div className="short:gap-6 short:pt-7 short:pb-6 relative flex min-h-full flex-col justify-between gap-8 px-6 pt-10 pb-8">
+      <div className="short:gap-6 flex flex-col gap-9">
+        <Link to={PATHS.home} className="short:h-12 flex h-[60px] items-center justify-center pr-3">
+          <img src={logo} alt="PassHUFS" className="short:h-12 h-[60px] w-auto" />
+        </Link>
+        <nav className="isolate flex flex-col gap-1.5">
+          {MENU.map((item) => (
+            <MenuLink key={item.label} item={item} path={pathname} />
+          ))}
+        </nav>
       </div>
+
+      <div className="flex flex-col gap-4">
+        <div className={inDrawer ? '' : 'tiny:hidden'}>
+          <DdayCard />
+        </div>
+        <UserCard onLogout={logout} />
+      </div>
+    </div>
+  );
+}
+
+function SidebarBg() {
+  return (
+    <img
+      src={sidebarBg}
+      alt=""
+      className="pointer-events-none absolute inset-0 size-full object-cover object-bottom opacity-70"
+    />
+  );
+}
+
+export default function Sidebar() {
+  return (
+    <aside className="border-line-soft sticky top-0 h-screen w-80 shrink-0 overflow-hidden border-r bg-white">
+      <SidebarBg />
+      <SidebarBody />
     </aside>
+  );
+}
+
+// 좁은 화면: 위쪽 바 + 메뉴 버튼으로 여는 사이드바
+export function MobileNav() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  return (
+    <>
+      <header className="border-line-soft sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-white/90 px-4 backdrop-blur sm:px-8">
+        <Link to={PATHS.home} className="flex items-center">
+          <img src={logo} alt="PassHUFS" className="h-9 w-auto" />
+        </Link>
+        <button
+          type="button"
+          aria-label="메뉴 열기"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+          className="text-ink-sub hover:bg-panel flex size-11 items-center justify-center rounded-[12px] transition-colors"
+        >
+          <Icon name="menu" />
+        </button>
+      </header>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="bg-ink/40 fixed inset-0 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setOpen(false)}
+          >
+            <motion.aside
+              role="dialog"
+              aria-modal="true"
+              aria-label="메뉴"
+              className="relative h-dvh w-80 max-w-[85vw] overflow-x-hidden overflow-y-auto bg-white"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+              onClick={(e) => e.stopPropagation()}
+              // 메뉴를 누르면 닫힘
+              onClickCapture={(e) => (e.target as HTMLElement).closest('a') && setOpen(false)}
+            >
+              <SidebarBg />
+              <button
+                type="button"
+                aria-label="메뉴 닫기"
+                onClick={() => setOpen(false)}
+                className="text-ink-muted hover:bg-panel absolute top-3 right-3 z-10 flex size-10 items-center justify-center rounded-full"
+              >
+                <Icon name="x" />
+              </button>
+              <SidebarBody inDrawer />
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
