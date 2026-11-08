@@ -308,3 +308,75 @@ export const getMockCourseCases = (universityId: number): CourseCase[] =>
           isSample: true,
         },
       ];
+
+export type HousingType = 'DORM' | 'OFF_CAMPUS' | 'OTHER';
+
+// 비용은 등록자가 입력한 원문 그대로 (통화·기간이 달라 환산하지 않음)
+export type ReturnReport = {
+  reportId: number;
+  semester: string;
+  cost: { flight?: string; insurance?: string; monthlyLiving?: string; total?: string };
+  housing: HousingType;
+  visa?: string;
+  insurancePlace?: string;
+  summary: string;
+  isSample?: boolean;
+};
+
+// 3번 학교는 비어 있음 화면 확인용
+export const getMockReturnReports = (universityId: number): ReturnReport[] =>
+  universityId === 3
+    ? []
+    : [
+        {
+          reportId: 1,
+          semester: '2026-1',
+          cost: {
+            flight: '왕복 약 130만 원',
+            insurance: '약 300유로',
+            monthlyLiving: '월 1,000유로',
+            total: '약 900만 원',
+          },
+          housing: 'DORM',
+          visa: '약 3주 · 거주 허가(MVV)',
+          insurancePlace: '학교 지정 보험',
+          summary:
+            '기숙사는 학교 근처라 통학이 편했고, 수업은 토론과 팀 과제 비중이 높았어요. 물가가 높아 장보기 위주로 생활비를 아꼈어요.',
+        },
+        {
+          reportId: 2,
+          semester: '2025-2',
+          cost: { flight: '왕복 120만 원', monthlyLiving: '월 900유로', total: '800만 원 정도' },
+          housing: 'OFF_CAMPUS',
+          visa: '약 1달 · 학생 비자',
+          insurancePlace: '국내 유학생 보험',
+          summary:
+            '자취방은 학교 커뮤니티에서 구했어요. 경영 과목은 출석과 발표 점수 비중이 커서 준비를 많이 해야 했어요.',
+          isSample: true,
+        },
+        {
+          reportId: 3,
+          semester: '2025-1',
+          cost: { monthlyLiving: '월 120만 원' },
+          housing: 'DORM',
+          visa: '2주',
+          insurancePlace: '학교 지정 보험',
+          summary: '현지 학생 버디 프로그램이 있어 적응이 빨랐어요. 시험은 서술형이 많았어요.',
+          isSample: true,
+        },
+        {
+          reportId: 4,
+          semester: '2024-2',
+          cost: {
+            flight: '왕복 150만 원',
+            insurance: '25만 원',
+            monthlyLiving: '월 1,100유로',
+            total: '1,000만 원',
+          },
+          housing: 'OTHER',
+          visa: '약 3주 · 거주 허가',
+          summary:
+            '홈스테이로 지내며 현지 문화를 가까이 경험했어요. 교통비가 생각보다 많이 들었어요.',
+          isSample: true,
+        },
+      ];
