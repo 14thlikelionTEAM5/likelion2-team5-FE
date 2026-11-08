@@ -17,8 +17,26 @@ export type LoginResponse = {
   user: { userId: number; schoolEmail: string; nickname: string; majorType: MajorType };
 };
 
-export const login = (body: LoginRequest) =>
-  api<LoginResponse>('/auth/login', { method: 'POST', body });
+const DEV_EMAIL = import.meta.env.VITE_DEV_LOGIN_EMAIL;
+const DEV_PASSWORD = import.meta.env.VITE_DEV_LOGIN_PASSWORD;
+
+export const login = (body: LoginRequest) => {
+  // 개발용 임시 계정. BE 로그인이 열리면 환경 변수 삭제
+  if (
+    DEV_EMAIL &&
+    DEV_PASSWORD &&
+    body.schoolEmail === DEV_EMAIL &&
+    body.password === DEV_PASSWORD
+  ) {
+    return Promise.resolve<LoginResponse>({
+      accessToken: 'dev-token',
+      tokenType: 'Bearer',
+      expiresIn: 0,
+      user: { userId: 0, schoolEmail: DEV_EMAIL, nickname: '개발용', majorType: 'PRIMARY' },
+    });
+  }
+  return api<LoginResponse>('/auth/login', { method: 'POST', body });
+};
 
 // 성공 시 토큰 저장까지 함
 export const useLogin = () =>

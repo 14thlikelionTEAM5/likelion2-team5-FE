@@ -3,4 +3,6 @@
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string;
   readonly VITE_SKIP_AUTH?: string;
+  readonly VITE_DEV_LOGIN_EMAIL?: string;
+  readonly VITE_DEV_LOGIN_PASSWORD?: string;
 }
