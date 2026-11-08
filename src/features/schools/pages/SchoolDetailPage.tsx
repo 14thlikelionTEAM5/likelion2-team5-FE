@@ -6,10 +6,18 @@ import EmptyState from '@/shared/ui/EmptyState';
 import Placeholder from '@/shared/ui/Placeholder';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Tabs from '@/shared/ui/Tabs';
+import CoursesTab from '../components/CoursesTab';
 import OfficialTab from '../components/OfficialTab';
 import SchoolHeader from '../components/SchoolHeader';
 import SpecTab from '../components/SpecTab';
-import { getMockAdmissionReports, getMockOfficial, getMockSchool, MOCK_ME } from '../mock';
+import {
+  getMockAdmissionReports,
+  getMockCourseCases,
+  getMockCourses,
+  getMockOfficial,
+  getMockSchool,
+  MOCK_ME,
+} from '../mock';
 
 const TABS: { value: SchoolTab; label: string; figma: string }[] = [
   { value: 'official', label: '공식 정보', figma: '학교 상세 - 공식 정보' },
@@ -66,6 +74,12 @@ export default function SchoolDetailPage() {
         <OfficialTab key={tab} info={getMockOfficial(school)} />
       ) : tab === 'spec' ? (
         <SpecTab key={tab} reports={getMockAdmissionReports(school.universityId)} me={MOCK_ME} />
+      ) : tab === 'courses' ? (
+        <CoursesTab
+          key={tab}
+          courses={getMockCourses(school.universityId)}
+          cases={getMockCourseCases(school.universityId)}
+        />
       ) : (
         // TODO: 나머지 탭은 각 이슈에서 구현
         <Stagger key={tab} delay={0.12}>
