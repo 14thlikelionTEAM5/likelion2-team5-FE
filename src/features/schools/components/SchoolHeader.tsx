@@ -22,7 +22,7 @@ export default function SchoolHeader({
 
   return (
     <section
-      className="flex flex-col gap-4 overflow-hidden rounded-[28px] bg-cover bg-center px-10 pt-8 pb-9"
+      className="flex flex-col gap-4 overflow-hidden rounded-[28px] bg-cover bg-center px-5 pt-6 pb-7 sm:px-10 sm:pt-8 sm:pb-9"
       style={{ backgroundImage: `url("${heroLight}")` }}
     >
       <Breadcrumb
@@ -33,7 +33,7 @@ export default function SchoolHeader({
         ]}
       />
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
         <button
           type="button"
           aria-label="뒤로"
@@ -42,11 +42,13 @@ export default function SchoolHeader({
         >
           <Icon name="arrowL" size={24} />
         </button>
-        <h1 className="text-[38px] font-bold">{school.name}</h1>
-        <div className="flex-1" />
+        <h1 className="min-w-0 flex-1 text-[26px] leading-tight font-bold sm:text-[38px]">
+          {school.name}
+        </h1>
         <button
           type="button"
           aria-pressed={school.bookmarked}
+          aria-label={school.bookmarked ? '찜 해제' : '찜하기'}
           onClick={onToggleBookmark}
           className={`rounded-control flex h-[54px] shrink-0 items-center gap-2 px-4 text-[18px] font-semibold transition-transform active:scale-95 ${
             school.bookmarked
@@ -55,7 +57,7 @@ export default function SchoolHeader({
           }`}
         >
           <BookmarkStar on={school.bookmarked} size={24} />
-          {school.bookmarked ? '찜한 학교' : '찜하기'}
+          <span className="hidden sm:inline">{school.bookmarked ? '찜한 학교' : '찜하기'}</span>
         </button>
       </div>
 
@@ -71,7 +73,7 @@ export default function SchoolHeader({
 
 function Tag({ label, value }: { label?: string; value: string }) {
   return (
-    <span className="border-line-soft flex h-11 items-center gap-1.5 rounded-full border bg-white px-3.5 text-[18px]">
+    <span className="border-line-soft flex h-10 items-center gap-1.5 rounded-full border bg-white px-3.5 text-[16px] sm:h-11 sm:text-[18px]">
       {label && <span className="text-ink-muted">{label}</span>}
       <span className="text-ink-sub font-semibold">{value}</span>
     </span>

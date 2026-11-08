@@ -58,13 +58,13 @@ function CardHeading({
   side?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex items-center gap-3">
+    <div className="mb-5 flex flex-wrap items-center gap-3">
       <div className="bg-panel text-ink-sub flex size-12 shrink-0 items-center justify-center rounded-[16px]">
         <Icon name={icon} size={24} />
       </div>
-      <div className="flex flex-1 flex-col gap-1">
-        <h2 className="text-[26px] font-bold">{title}</h2>
-        {description && <p className="text-ink-muted text-[18px]">{description}</p>}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h2 className="text-[22px] font-bold sm:text-[26px]">{title}</h2>
+        {description && <p className="text-ink-muted text-[16px] sm:text-[18px]">{description}</p>}
       </div>
       {side}
     </div>
@@ -164,7 +164,7 @@ export default function ReportsTab({
         </Card>
       </StaggerItem>
 
-      <div className="grid grid-cols-3 items-stretch gap-6">
+      <div className="3xl:grid-cols-3 grid items-stretch gap-6">
         <StaggerItem className="flex">
           <Card className="flex flex-1 flex-col">
             <CardHeading icon="bed" title="숙소" />
@@ -258,13 +258,15 @@ export default function ReportsTab({
               {summary.shown.map((r) => (
                 <div
                   key={r.reportId}
-                  className="rounded-note bg-panel flex items-start gap-4 p-[18px]"
+                  className="rounded-note bg-panel flex flex-col items-start gap-3 p-4 sm:flex-row sm:gap-4 sm:p-[18px]"
                 >
-                  <span className="flex shrink-0 flex-col items-start gap-1.5">
+                  <span className="flex shrink-0 items-start gap-1.5 sm:flex-col">
                     <Badge>{r.semester}학기</Badge>
                     {r.isSample && <SampleTag />}
                   </span>
-                  <p className="text-ink-sub flex-1 text-[19px] leading-[1.6]">{r.summary}</p>
+                  <p className="text-ink-sub flex-1 text-[17px] leading-[1.6] sm:text-[19px]">
+                    {r.summary}
+                  </p>
                 </div>
               ))}
             </div>

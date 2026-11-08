@@ -63,7 +63,7 @@ export default function SpecFormFields({
         </div>
       </Field>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <Field label="어학 성적" hint="여러 개면 하나를 골라요">
           <Select
             aria-label="어학 성적"
@@ -86,7 +86,7 @@ export default function SpecFormFields({
         </Field>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <Field label="누적 학점">
           <Input
             aria-label="누적 학점"

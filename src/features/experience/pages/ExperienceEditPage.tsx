@@ -84,12 +84,12 @@ export default function ExperienceEditPage() {
       </StaggerItem>
 
       <StaggerItem>
-        <div className="rounded-card shadow-card flex items-center gap-3 bg-white px-7 py-5">
+        <div className="rounded-card shadow-card flex flex-wrap items-center gap-3 bg-white px-5 py-4 sm:px-7 sm:py-5">
           <Badge tone="primary">{BADGE[kind]}</Badge>
           <span className="text-[22px] font-bold">
             {getSchoolOption(record.universityId)?.name ?? '-'}
           </span>
-          <span className="bg-line h-5 w-px" />
+          <span className="bg-line hidden h-5 w-px sm:block" />
           <span className="text-ink-sub text-[19px]">
             {record.year}-{record.semester}학기
           </span>
@@ -151,7 +151,7 @@ function EditCard({
   return (
     <Card className="flex flex-col gap-7">
       {children}
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-3">
         {form.error && <span className="text-danger text-[16px] font-medium">{form.error}</span>}
         <Button variant="secondary" onClick={form.cancel}>
           취소

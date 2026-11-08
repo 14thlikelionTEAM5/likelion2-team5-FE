@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export type Column<T> = {
@@ -17,10 +17,15 @@ export default function Table<T>({
   rows: T[];
   rowKey: (row: T) => string | number;
 }) {
+  // 좁은 화면(사이드바가 없을 때)에서는 칸이 찌그러지지 않게 표만 가로로 스크롤
+  const minWidth = columns.reduce((sum, c) => sum + (c.width ?? 200), 0);
+
   return (
-    // 좁은 화면에서는 표만 가로로 스크롤
     <div className="-mx-1 overflow-x-auto px-1">
-      <table className="w-full min-w-[720px] table-fixed border-collapse text-left">
+      <table
+        style={{ '--table-min': `${minWidth}px` } as CSSProperties}
+        className="w-full min-w-(--table-min) table-fixed border-collapse text-left xl:min-w-0"
+      >
         <colgroup>
           {columns.map((c) => (
             <col key={c.key} style={c.width ? { width: c.width } : undefined} />

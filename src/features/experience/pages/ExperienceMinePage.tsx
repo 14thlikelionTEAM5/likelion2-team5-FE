@@ -67,13 +67,13 @@ export default function ExperienceMinePage() {
   return (
     <Stagger className="flex flex-col gap-8">
       <StaggerItem>
-        <header className="flex items-end justify-between">
+        <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1.5">
             <Breadcrumb
               items={[{ label: '경험 등록', to: PATHS.experienceNew() }, { label: '내 등록 내역' }]}
             />
-            <h1 className="text-[38px] font-bold">내 등록 내역</h1>
-            <p className="text-ink-muted text-[19px]">
+            <h1 className="text-[30px] font-bold sm:text-[38px]">내 등록 내역</h1>
+            <p className="text-ink-muted text-[17px] sm:text-[19px]">
               등록한 경험을 확인하고 수정하거나 삭제할 수 있어요.
             </p>
           </div>

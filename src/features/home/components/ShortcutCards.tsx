@@ -18,7 +18,7 @@ export default function ShortcutCards({ recentPlan }: { recentPlan: RecentPlan |
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid gap-6 lg:grid-cols-2">
       <Card className="flex flex-col items-start gap-5">
         <CardHeading
           icon="globe"

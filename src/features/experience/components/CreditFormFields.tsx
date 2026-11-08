@@ -101,51 +101,43 @@ export default function CreditFormFields({
         </AnimatePresence>
       </Field>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1">
-            <Field label="본교 인정 과목">
-              <SearchSelect
-                value={value.homeCourse}
-                onChange={(homeCourse) => set({ homeCourse })}
-                // TODO: 본교 과목 검색 API 연결
-                search={searchHomeCourses}
-                getKey={(c) => c.courseId}
-                getLabel={(c) => `${c.name} (${c.code})`}
-                renderOption={(c) => (
-                  <>
-                    <span className="text-ink font-medium">{c.name}</span>
-                    <span className="text-ink-muted">{c.code}</span>
-                  </>
-                )}
-                placeholder={homeEnabled ? '과목명 검색' : '교양·자선은 선택하지 않아요'}
-                clearLabel="본교 과목 선택 지우기"
-                disabled={!homeEnabled}
-              />
-            </Field>
-          </div>
-          <div className="w-[360px]">
-            <Field label="인정 학점">
-              <Input
-                aria-label="인정 학점"
-                inputMode="decimal"
-                placeholder={`직접 입력 (0 초과 ${MAX_CREDITS} 이하)`}
-                value={value.credits}
-                onChange={(e) => set({ credits: e.target.value })}
-                unit="학점"
-              />
-            </Field>
-          </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <Field label="본교 인정 과목">
+            <SearchSelect
+              value={value.homeCourse}
+              onChange={(homeCourse) => set({ homeCourse })}
+              // TODO: 본교 과목 검색 API 연결
+              search={searchHomeCourses}
+              getKey={(c) => c.courseId}
+              getLabel={(c) => `${c.name} (${c.code})`}
+              renderOption={(c) => (
+                <>
+                  <span className="text-ink font-medium">{c.name}</span>
+                  <span className="text-ink-muted">{c.code}</span>
+                </>
+              )}
+              placeholder={homeEnabled ? '과목명 검색' : '교양·자선은 선택하지 않아요'}
+              clearLabel="본교 과목 선택 지우기"
+              disabled={!homeEnabled}
+            />
+          </Field>
+          <Hint>구분이 전필·전선일 때만 검색해 선택해요. 교양·자선이면 비활성돼요.</Hint>
         </div>
-        <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1">
-            <Hint>구분이 전필·전선일 때만 검색해 선택해요. 교양·자선이면 비활성돼요.</Hint>
-          </div>
-          <div className="w-[360px]">
-            {creditsError && (
-              <Hint tone="danger">{`0 초과 ${MAX_CREDITS} 이하로 입력해 주세요`}</Hint>
-            )}
-          </div>
+        <div className="flex flex-col gap-2 lg:w-[360px]">
+          <Field label="인정 학점">
+            <Input
+              aria-label="인정 학점"
+              inputMode="decimal"
+              placeholder={`직접 입력 (0 초과 ${MAX_CREDITS} 이하)`}
+              value={value.credits}
+              onChange={(e) => set({ credits: e.target.value })}
+              unit="학점"
+            />
+          </Field>
+          {creditsError && (
+            <Hint tone="danger">{`0 초과 ${MAX_CREDITS} 이하로 입력해 주세요`}</Hint>
+          )}
         </div>
       </div>
     </div>

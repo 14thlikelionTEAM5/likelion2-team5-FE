@@ -31,21 +31,21 @@ export default function SchoolCard({
       tabIndex={0}
       onClick={open}
       onKeyDown={(e) => e.key === 'Enter' && open()}
-      className={`rounded-card flex cursor-pointer items-center gap-5 p-6 ${
+      className={`rounded-card flex cursor-pointer flex-wrap items-center gap-x-5 gap-y-4 p-5 sm:flex-nowrap sm:p-6 ${
         closed ? 'bg-fill' : 'shadow-card hover:bg-panel bg-white'
       }`}
     >
       <div
-        className={`text-ink-sub flex size-[62px] shrink-0 items-center justify-center rounded-[21px] ${
+        className={`text-ink-sub hidden size-[62px] shrink-0 items-center justify-center rounded-[21px] sm:flex ${
           closed ? 'bg-white' : 'bg-panel'
         }`}
       >
         <Icon name="globe" size={31} />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex items-center gap-2.5">
-          <h3 className={`text-[26px] font-bold ${closed ? 'text-ink-muted' : ''}`}>
+      <div className="flex min-w-0 flex-1 basis-full flex-col gap-2 sm:basis-auto">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+          <h3 className={`text-[22px] font-bold sm:text-[26px] ${closed ? 'text-ink-muted' : ''}`}>
             {school.name}
           </h3>
           <span className="text-ink-muted text-[18px]">{school.country}</span>
@@ -65,8 +65,10 @@ export default function SchoolCard({
           </p>
         ) : (
           <>
-            <p className="text-ink-sub text-[18px]">주요 조건: {school.conditionSummary ?? '-'}</p>
-            <div className="flex items-center gap-2.5">
+            <p className="text-ink-sub text-[16px] sm:text-[18px]">
+              주요 조건: {school.conditionSummary ?? '-'}
+            </p>
+            <div className="flex flex-wrap items-center gap-2.5">
               {school.hasExperience && (
                 <span className="border-line-soft bg-panel text-ink-sub flex h-8 items-center gap-1.5 rounded-[8px] border px-2.5 text-[15px] font-semibold">
                   <Icon name="check" />
@@ -89,12 +91,12 @@ export default function SchoolCard({
       </div>
 
       {!closed && (
-        <>
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <p className="text-ink-sub text-[19px] font-semibold">
+        <div className="flex w-full items-center gap-4 sm:w-auto">
+          <div className="flex flex-1 shrink-0 flex-col gap-1 sm:items-end">
+            <p className="text-ink-sub text-[19px] font-semibold whitespace-nowrap">
               모집 인원 {school.recruitCount}명
             </p>
-            <p className="text-ink-muted text-[16px]">기준일 {school.baseDate}</p>
+            <p className="text-ink-muted text-[16px] whitespace-nowrap">기준일 {school.baseDate}</p>
           </div>
           <button
             type="button"
@@ -112,7 +114,7 @@ export default function SchoolCard({
           >
             <BookmarkStar on={school.bookmarked} />
           </button>
-        </>
+        </div>
       )}
     </div>
   );

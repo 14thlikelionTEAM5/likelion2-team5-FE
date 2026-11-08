@@ -19,12 +19,12 @@ export default function MySection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-card shadow-card flex flex-col gap-5 bg-white p-8">
+    <section className="rounded-card shadow-card flex flex-col gap-5 bg-white p-5 sm:p-8">
       <div className="flex items-center gap-3">
         <span className="bg-panel text-ink-sub flex size-[42px] items-center justify-center rounded-[12px]">
           <Icon name={icon} size={22} />
         </span>
-        <h2 className="text-[26px] font-bold">{title}</h2>
+        <h2 className="text-[22px] font-bold sm:text-[26px]">{title}</h2>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
             key={count}
@@ -48,7 +48,7 @@ export default function MySection({
             key="empty"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-panel rounded-panel flex items-center justify-between px-6 py-5"
+            className="bg-panel rounded-panel flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-5"
           >
             <span className="text-ink-muted text-[18px]">{emptyText}</span>
             <Button variant="secondary" size="sm" icon="pen" onClick={onRegister}>

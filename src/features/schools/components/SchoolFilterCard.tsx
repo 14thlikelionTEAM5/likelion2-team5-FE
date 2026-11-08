@@ -26,10 +26,10 @@ export default function SchoolFilterCard({
 }) {
   return (
     <Card className="flex flex-col gap-4">
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 md:flex-row">
         <Select
           icon="globe"
-          className="w-[299px]"
+          className="w-full md:w-[299px]"
           value={filters.country}
           onChange={(v) => onChange('country', v)}
           options={[
@@ -39,22 +39,22 @@ export default function SchoolFilterCard({
         />
         <Input
           icon="search"
-          className="flex-1"
+          className="w-full md:flex-1"
           placeholder="학교 이름 검색..."
           value={filters.q}
           onChange={(e) => onChange('q', e.target.value)}
         />
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2.5">
-          <span className="text-ink-sub text-[18px] font-semibold">예상 비용</span>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-6">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-ink-sub w-full text-[18px] font-semibold sm:w-auto">예상 비용</span>
           <Input
             size="sm"
             unit="원"
             inputMode="numeric"
             placeholder="최소"
-            className="w-[173px]"
+            className="min-w-0 flex-1 sm:w-[173px] sm:flex-none"
             value={filters.minCost}
             onChange={(e) => onChange('minCost', onlyDigits(e.target.value))}
           />
@@ -64,16 +64,18 @@ export default function SchoolFilterCard({
             unit="원"
             inputMode="numeric"
             placeholder="최대"
-            className="w-[173px]"
+            className="min-w-0 flex-1 sm:w-[173px] sm:flex-none"
             value={filters.maxCost}
             onChange={(e) => onChange('maxCost', onlyDigits(e.target.value))}
           />
         </div>
 
-        <div className="bg-line-soft h-8 w-px" />
+        <div className="bg-line-soft hidden h-8 w-px xl:block" />
 
-        <div className="flex items-center gap-2">
-          <span className="text-ink-sub mr-1 text-[18px] font-semibold">어학시험 종류</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-ink-sub mr-1 w-full text-[18px] font-semibold sm:w-auto">
+            어학시험 종류
+          </span>
           {LANGUAGE_EXAMS.map((exam) => (
             <Chip
               key={exam.value}
@@ -85,7 +87,7 @@ export default function SchoolFilterCard({
           ))}
         </div>
 
-        <div className="flex-1" />
+        <div className="hidden flex-1 xl:block" />
 
         <Toggle
           checked={filters.eligibleOnly}

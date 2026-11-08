@@ -134,12 +134,14 @@ export default function ExperienceNewPage() {
   };
 
   const saveRow = (note: string) => (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       <Icon name="lock" size={19} className="text-ink-muted" />
       <span className="text-ink-muted text-[16px]">{note}</span>
       <div className="flex-1" />
       {error && <span className="text-danger text-[16px] font-medium">{error}</span>}
-      <Button onClick={onSave}>저장</Button>
+      <Button className="ml-auto" onClick={onSave}>
+        저장
+      </Button>
     </div>
   );
 
@@ -165,7 +167,7 @@ export default function ExperienceNewPage() {
           <hr className="border-line-soft" />
 
           <StepTitle no={2}>학교/학기 선택</StepTitle>
-          <div className="flex items-start gap-3">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-3">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <span className="text-ink-sub text-[18px] font-semibold">학교</span>
               <SchoolSearch
@@ -181,7 +183,7 @@ export default function ExperienceNewPage() {
             <div className="flex flex-col gap-2">
               <span className="text-ink-sub text-[18px] font-semibold">연도</span>
               <Select
-                className="w-[207px]"
+                className="w-full lg:w-[207px]"
                 aria-label="연도"
                 value={year}
                 onChange={setYear}

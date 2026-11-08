@@ -6,6 +6,9 @@
 @custom-variant tiny (@media (max-height: 939px));
 
 @theme {
+  /* 사이드바가 있는 상태에서 두 칸 배치가 들어가는 너비 */
+  --breakpoint-3xl: 105rem;
+
   --font-sans: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
 
   --color-primary: #003a6c;
