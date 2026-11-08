@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type Tone = 'accent' | 'primary' | 'danger' | 'caution' | 'neutral';
+type Tone = 'accent' | 'primary' | 'danger' | 'caution' | 'neutral' | 'white';
 
 const styles: Record<Tone, string> = {
   accent: 'bg-accent-soft text-accent-strong',
@@ -8,6 +8,7 @@ const styles: Record<Tone, string> = {
   danger: 'bg-danger-soft text-danger',
   caution: 'bg-caution-soft text-caution',
   neutral: 'bg-fill text-ink-sub',
+  white: 'bg-white text-ink-sub', // 회색 카드 위
 };
 
 export default function Badge({

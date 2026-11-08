@@ -139,7 +139,7 @@ assets/
 | `InfoNote`   | info 아이콘 + 안내 박스             | `tone`: gray·primary                                                    |
 | `EmptyState` | 빈 화면                             | `title` `description` `action`                                          |
 | `Table`      | 표                                  | `columns`(`key` `header` `width` `render`) `rows` `rowKey`              |
-| `Badge`      | 상태 배지                           | `tone`: accent·primary·danger·caution·neutral                           |
+| `Badge`      | 상태 배지                           | `tone`: accent·primary·danger·caution·neutral·white                     |
 | `Modal`      | 팝업                                | `open` `onClose`                                                        |
 | `Icon`       | 아이콘 (글자색을 따라감)            | `name` `size`                                                           |
 
