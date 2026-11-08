@@ -39,7 +39,6 @@ export default function CoursesTab({
   cases: CourseCase[];
 }) {
   const navigate = useNavigate();
-  // TODO: 어느 수강계획에 담을지 고르는 방식은 동균과 협의 후 /study-plans/{planId}/items 연결
   const [added, setAdded] = useState<number[]>([]);
 
   if (courses.length === 0 && cases.length === 0) {
