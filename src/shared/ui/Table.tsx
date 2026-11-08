@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 
 export type Column<T> = {
   key: string;
@@ -36,15 +37,25 @@ export default function Table<T>({
         </tr>
       </thead>
       <tbody>
-        {rows.map((row) => (
-          <tr key={rowKey(row)} className="border-fill border-b">
-            {columns.map((c) => (
-              <td key={c.key} className="px-4 py-3.5 text-lg">
-                {c.render(row)}
-              </td>
-            ))}
-          </tr>
-        ))}
+        {/* 행이 추가·삭제될 때만 애니메이션 */}
+        <AnimatePresence initial={false}>
+          {rows.map((row) => (
+            <motion.tr
+              key={rowKey(row)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={{ duration: 0.2 }}
+              className="border-fill border-b"
+            >
+              {columns.map((c) => (
+                <td key={c.key} className="px-4 py-3.5 text-lg">
+                  {c.render(row)}
+                </td>
+              ))}
+            </motion.tr>
+          ))}
+        </AnimatePresence>
       </tbody>
     </table>
   );
