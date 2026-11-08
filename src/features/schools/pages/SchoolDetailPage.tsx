@@ -4,6 +4,7 @@ import { PATHS, type SchoolTab } from '@/app/paths';
 import Button from '@/shared/ui/Button';
 import EmptyState from '@/shared/ui/EmptyState';
 import Placeholder from '@/shared/ui/Placeholder';
+import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Tabs from '@/shared/ui/Tabs';
 import OfficialTab from '../components/OfficialTab';
 import SchoolHeader from '../components/SchoolHeader';
@@ -41,26 +42,39 @@ export default function SchoolDetailPage() {
   const current = TABS.find((t) => t.value === tab)!;
 
   return (
-    <div className="flex flex-col gap-8">
-      <SchoolHeader
-        school={school}
-        onToggleBookmark={() => setSchool({ ...school, bookmarked: !school.bookmarked })}
-      />
+    <Stagger className="flex flex-col gap-8">
+      <StaggerItem>
+        <SchoolHeader
+          school={school}
+          onToggleBookmark={() => setSchool({ ...school, bookmarked: !school.bookmarked })}
+        />
+      </StaggerItem>
 
       {school.hasExperience && (
-        <Tabs items={TABS} value={tab} onChange={(v) => setParams({ tab: v }, { replace: true })} />
+        <StaggerItem>
+          <Tabs
+            items={TABS}
+            value={tab}
+            onChange={(v) => setParams({ tab: v }, { replace: true })}
+          />
+        </StaggerItem>
       )}
 
+      {/* key로 탭이 바뀔 때마다 내용이 다시 차례로 나옴 */}
       {tab === 'official' ? (
-        <OfficialTab info={getMockOfficial(school)} />
+        <OfficialTab key={tab} info={getMockOfficial(school)} />
       ) : (
         // TODO: 나머지 탭은 각 이슈에서 구현
-        <Placeholder
-          title={current.label}
-          owner="윤지"
-          figma={`유윤지 - 디자인 / ${current.figma}`}
-        />
+        <Stagger key={tab} delay={0.12}>
+          <StaggerItem>
+            <Placeholder
+              title={current.label}
+              owner="윤지"
+              figma={`유윤지 - 디자인 / ${current.figma}`}
+            />
+          </StaggerItem>
+        </Stagger>
       )}
-    </div>
+    </Stagger>
   );
 }
