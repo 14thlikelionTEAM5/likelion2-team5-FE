@@ -236,7 +236,7 @@ export const MOCK_ME = {
   scores: { NEW_TOEFL: 100, IELTS: 7.0 } as Record<string, number>,
 };
 
-export type CreditType = 'MAJOR_ELECTIVE' | 'GENERAL' | 'FREE_ELECTIVE';
+export type CreditType = 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL' | 'FREE_ELECTIVE';
 
 export type Course = {
   courseId: number;

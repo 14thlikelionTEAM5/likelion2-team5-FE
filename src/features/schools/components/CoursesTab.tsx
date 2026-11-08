@@ -14,7 +14,8 @@ import Table from '@/shared/ui/Table';
 import type { Course, CourseCase, CreditType } from '../mock';
 
 // TODO: 구분 값은 BE 명세 확인
-const CREDIT_TYPE = {
+export const CREDIT_TYPE = {
+  MAJOR_REQUIRED: { tone: 'caution', label: '전필' },
   MAJOR_ELECTIVE: { tone: 'primary', label: '전선' },
   GENERAL: { tone: 'accent', label: '교양' },
   FREE_ELECTIVE: { tone: 'neutral', label: '자선' },
