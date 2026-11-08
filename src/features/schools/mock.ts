@@ -77,3 +77,10 @@ export const MOCK_SCHOOLS: SchoolSummary[] = [
     languageExams: ['ITP_TOEFL'],
   },
 ];
+
+export type SchoolDetail = SchoolSummary & { exchangeStart: string; exchangeEnd: string };
+
+export const getMockSchool = (id: number): SchoolDetail | undefined => {
+  const school = MOCK_SCHOOLS.find((s) => s.universityId === id);
+  return school && { ...school, exchangeStart: '2027-02-24', exchangeEnd: '2027-06-30' };
+};
