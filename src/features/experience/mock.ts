@@ -1,6 +1,6 @@
-// TODO: /universities/search, /experiences/check-duplicate, /consents, /return-reports/extract 연결 후 삭제
+// TODO: /universities/search, /experiences/check-duplicate, /consents, /return-reports/extract, 본교 과목 검색 연결 후 삭제
 import type { ExperienceKind } from '@/app/paths';
-import { MOCK_SCHOOLS, type HousingType } from '@/features/schools/mock';
+import { MOCK_SCHOOLS, type CreditType, type HousingType } from '@/features/schools/mock';
 import type { AdmissionResult, MajorType } from '@/shared/types/enums';
 
 // TODO: useMe() 연결 후 삭제
@@ -136,3 +136,61 @@ export const extractReport = (): Promise<ReportForm> =>
       1200,
     ),
   );
+
+// 내 귀국보고서의 수강 교과목 (학점 인정 결과의 대상 과목). 3번 학교는 귀국보고서 없음
+export const getMyReportCourses = (universityId: number): CourseRow[] =>
+  universityId === 3
+    ? []
+    : [
+        { key: 1, code: 'MKT201', name: 'Marketing 201', credits: '6 ECTS', rating: 4 },
+        { key: 2, code: 'FIN301', name: 'Corporate Finance', credits: '6 ECTS', rating: 3 },
+        { key: 3, code: 'MGT210', name: 'Organizational Behaviour', credits: '5 ECTS', rating: 5 },
+      ];
+
+export type HomeCourse = { courseId: number; code: string; name: string };
+
+const HOME_COURSES: HomeCourse[] = [
+  { courseId: 1, code: 'B01101', name: '마케팅원론' },
+  { courseId: 2, code: 'B01102', name: '재무관리' },
+  { courseId: 3, code: 'B01103', name: '회계원리' },
+  { courseId: 4, code: 'B01104', name: '조직행동론' },
+  { courseId: 5, code: 'B01201', name: '경영전략' },
+  { courseId: 6, code: 'B01202', name: '인적자원관리' },
+  { courseId: 7, code: 'B01203', name: '소비자행동론' },
+  { courseId: 8, code: 'B01204', name: '투자론' },
+  { courseId: 9, code: 'B01205', name: '생산운영관리' },
+  { courseId: 10, code: 'B01206', name: '경영정보시스템' },
+  { courseId: 11, code: 'B01207', name: '국제경영' },
+  { courseId: 12, code: 'B01208', name: '재무회계' },
+];
+
+export const searchHomeCourses = (q: string) => {
+  const word = q.trim().toLowerCase();
+  return HOME_COURSES.filter(
+    (c) => !word || c.name.includes(word) || c.code.toLowerCase().includes(word),
+  ).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+export type CreditForm = {
+  courseKey: string;
+  creditType: CreditType;
+  homeCourse: HomeCourse | null;
+  credits: string;
+};
+
+export const MAX_CREDITS = 3;
+
+export const EMPTY_CREDIT: CreditForm = {
+  courseKey: '',
+  creditType: 'MAJOR_ELECTIVE',
+  homeCourse: null,
+  credits: '',
+};
+
+// 교양·자선은 본교 과목을 고르지 않음
+export const needsHomeCourse = (t: CreditType) => t === 'MAJOR_REQUIRED' || t === 'MAJOR_ELECTIVE';
+
+export const isCreditInRange = (v: string) => {
+  const n = Number(v);
+  return v.trim() !== '' && Number.isFinite(n) && n > 0 && n <= MAX_CREDITS;
+};
