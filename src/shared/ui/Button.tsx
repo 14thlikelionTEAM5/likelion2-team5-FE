@@ -1,13 +1,14 @@
 import type { ButtonHTMLAttributes } from 'react';
 import Icon, { type IconName } from './Icon';
 
-type Variant = 'primary' | 'secondary' | 'subtle';
+type Variant = 'primary' | 'secondary' | 'subtle' | 'danger';
 type Size = 'md' | 'sm' | 'xs';
 
 const variants: Record<Variant, string> = {
   primary: 'bg-primary text-white hover:opacity-90',
   secondary: 'border border-line bg-white text-primary hover:bg-panel',
   subtle: 'border border-line bg-white text-ink-muted hover:bg-panel',
+  danger: 'bg-danger text-white hover:opacity-90',
 };
 
 const sizes: Record<Size, { box: string; icon: number }> = {
