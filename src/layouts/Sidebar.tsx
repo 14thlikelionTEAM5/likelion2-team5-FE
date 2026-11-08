@@ -187,7 +187,7 @@ export default function Sidebar() {
       <img
         src={sidebarBg}
         alt=""
-        className="pointer-events-none absolute inset-0 size-full object-cover object-bottom"
+        className="pointer-events-none absolute inset-0 size-full object-cover object-bottom opacity-70"
       />
       <div className="short:gap-6 short:pt-7 short:pb-6 relative flex h-full flex-col justify-between gap-8 px-6 pt-10 pb-8">
         <div className="short:gap-6 flex flex-col gap-9">
