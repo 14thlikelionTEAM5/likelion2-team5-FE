@@ -11,7 +11,7 @@ import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Table from '@/shared/ui/Table';
 import DeleteModal from '../components/DeleteModal';
 import MySection from '../components/MySection';
-import { deleteExperience, getMyExperiences, getSchoolOption } from '../mock';
+import { deleteExperience, getMyExperiences, getSchoolOption, reportFields } from '../mock';
 
 const schoolName = (id: number) => getSchoolOption(id)?.name ?? '-';
 const term = (e: { year: number; semester: number }) => `${e.year}-${e.semester}학기`;
@@ -172,14 +172,14 @@ export default function ExperienceMinePage() {
                     key: 'fields',
                     header: '구조화 항목',
                     width: 240,
-                    render: (e) => e.fields.join(' · '),
+                    render: (e) => reportFields(e.form).join(' · '),
                   },
                   {
                     key: 'summary',
                     header: 'AI 요약',
                     render: (e) => (
-                      <span className="text-ink-sub block truncate" title={e.summary}>
-                        {e.summary}
+                      <span className="text-ink-sub block truncate" title={e.form.summary}>
+                        {e.form.summary}
                       </span>
                     ),
                   },
@@ -229,7 +229,7 @@ export default function ExperienceMinePage() {
                     key: 'home',
                     header: '본교 인정 과목',
                     width: 190,
-                    render: (e) => e.homeCourse ?? <span className="text-ink-faint">-</span>,
+                    render: (e) => e.homeCourse?.name ?? <span className="text-ink-faint">-</span>,
                   },
                   { key: 'credits', header: '인정 학점', width: 120, render: (e) => e.credits },
                   manage('credit'),
