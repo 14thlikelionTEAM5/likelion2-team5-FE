@@ -67,10 +67,10 @@ export default function SchoolListPage() {
 
   return (
     <Stagger className="flex flex-col gap-8">
-      <StaggerItem className="flex items-end">
+      <StaggerItem className="flex flex-wrap items-end gap-2">
         <div className="flex flex-1 flex-col gap-1.5">
           <Breadcrumb items={[{ label: '협정교', to: PATHS.schools }, { label: '협정교 목록' }]} />
-          <h1 className="text-[38px] font-bold">협정교 목록</h1>
+          <h1 className="text-[30px] font-bold sm:text-[38px]">협정교 목록</h1>
         </div>
         <button
           type="button"
@@ -89,8 +89,8 @@ export default function SchoolListPage() {
         <SchoolFilterCard filters={filters} countries={countries} onChange={setFilter} />
       </StaggerItem>
 
-      <StaggerItem className="flex items-center gap-2.5">
-        <h2 className="text-[26px] font-bold">협정교 목록</h2>
+      <StaggerItem className="flex flex-wrap items-center gap-2.5">
+        <h2 className="text-[22px] font-bold sm:text-[26px]">협정교 목록</h2>
         <motion.span
           key={result.length}
           initial={{ opacity: 0, y: -6 }}
@@ -102,7 +102,7 @@ export default function SchoolListPage() {
         <div className="flex-1" />
         <Select
           size="sm"
-          className="w-[230px]"
+          className="w-full sm:w-[230px]"
           value={filters.sort}
           onChange={(v) => setFilter('sort', v as SchoolSort)}
           options={SORT_OPTIONS}
