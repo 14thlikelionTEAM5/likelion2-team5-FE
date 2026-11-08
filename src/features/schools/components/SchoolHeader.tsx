@@ -1,8 +1,10 @@
 import { useLocation, useNavigate } from 'react-router';
 import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
+import Breadcrumb from '@/shared/ui/Breadcrumb';
 import Icon from '@/shared/ui/Icon';
 import type { SchoolDetail } from '../mock';
+import { lastSchoolListUrl } from '../useSchoolFilters';
 import BookmarkStar from './BookmarkStar';
 
 export default function SchoolHeader({
@@ -23,7 +25,13 @@ export default function SchoolHeader({
       className="flex flex-col gap-4 overflow-hidden rounded-[28px] bg-cover bg-center px-10 pt-8 pb-9"
       style={{ backgroundImage: `url("${heroLight}")` }}
     >
-      <p className="text-ink-muted text-[18px] font-medium">협정교 › 협정교 목록 › 학교 상세</p>
+      <Breadcrumb
+        items={[
+          { label: '협정교', to: PATHS.schools },
+          { label: '협정교 목록', to: lastSchoolListUrl() },
+          { label: '학교 상세' },
+        ]}
+      />
 
       <div className="flex items-center gap-4">
         <button
