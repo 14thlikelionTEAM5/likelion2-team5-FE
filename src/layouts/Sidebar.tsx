@@ -75,6 +75,7 @@ function MenuLink({ item, path }: { item: MenuItem; path: string }) {
         {active && (
           <motion.span
             layoutId="nav-pill"
+            layoutDependency={path}
             className="rounded-control bg-primary absolute inset-0 -z-10"
             transition={{ type: 'spring', stiffness: 500, damping: 40 }}
           />
@@ -111,6 +112,7 @@ function MenuLink({ item, path }: { item: MenuItem; path: string }) {
                     {childActive && (
                       <motion.span
                         layoutId="nav-sub-pill"
+                        layoutDependency={path}
                         className="bg-accent-soft absolute inset-0 -z-10 rounded-[10px]"
                         transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                       />
