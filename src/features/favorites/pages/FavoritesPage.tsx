@@ -12,8 +12,8 @@ import Select from '@/shared/ui/Select';
 
 import heroLight from '@/assets/decor/hero-light.svg';
 
-// UI 확인을 위한 임시 데이터입니다.
-// 실제 API 연동 시 bookmarks.ts의 조회 결과로 교체합니다.
+// UI 테스트용 임시 데이터
+// 실제 API 연동 시 서버 응답으로 교체 예정
 type FavoriteSchool = {
   universityId: number;
   name: string;
@@ -26,7 +26,7 @@ type FavoriteSchool = {
 
 const INITIAL_FAVORITES: FavoriteSchool[] = [
   {
-    universityId: 1,
+    universityId: 4,
     name: 'University of Groningen',
     country: '네덜란드',
     recruitCount: 2,
@@ -34,7 +34,7 @@ const INITIAL_FAVORITES: FavoriteSchool[] = [
     eligibility: 'ELIGIBLE',
   },
   {
-    universityId: 2,
+    universityId: 31,
     name: 'Texas State University',
     country: '미국',
     recruitCount: 3,
@@ -43,7 +43,7 @@ const INITIAL_FAVORITES: FavoriteSchool[] = [
     ineligibleReason: '학점 부족',
   },
   {
-    universityId: 3,
+    universityId: 12,
     name: 'Florida International University',
     country: '미국',
     recruitCount: 3,
@@ -62,8 +62,11 @@ export default function FavoritesPage() {
   const [country, setCountry] = useState('');
   const [keyword, setKeyword] = useState('');
 
+  // 국가 필터 옵션
   const countryOptions = useMemo(() => {
-    const countries = [...new Set(favorites.map((school) => school.country))];
+    const countries = [
+      ...new Set(favorites.map((school) => school.country)),
+    ];
 
     return [
       { value: '', label: '국가 전체' },
@@ -74,36 +77,44 @@ export default function FavoritesPage() {
     ];
   }, [favorites]);
 
+  // 검색 및 국가 필터
   const filteredFavorites = useMemo(() => {
     const search = keyword.trim().toLowerCase();
 
     return favorites.filter((school) => {
-      const matchesCountry = !country || school.country === country;
+      const matchesCountry =
+        !country || school.country === country;
+
       const matchesKeyword =
-        !search || school.name.toLowerCase().includes(search);
+        !search ||
+        school.name.toLowerCase().includes(search);
 
       return matchesCountry && matchesKeyword;
     });
   }, [favorites, country, keyword]);
 
-  // 현재는 화면 테스트를 위한 로컬 상태 변경입니다.
+  // 찜 해제 (현재는 임시 데이터에서 제거)
   const handleRemoveFavorite = (universityId: number) => {
     setFavorites((previous) =>
-      previous.filter((school) => school.universityId !== universityId),
+      previous.filter(
+        (school) => school.universityId !== universityId,
+      ),
     );
   };
 
+  // 카드 클릭 시 학교 상세 페이지로 이동
   const handleGoToSchool = (universityId: number) => {
     navigate(PATHS.schoolDetail(universityId));
   };
 
+  // 협정교 목록으로 이동
   const handleGoToSchoolList = () => {
     navigate(PATHS.schools);
   };
 
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-9">
-      {/* 상단 히어로 배너 */}
+      {/* 히어로 배너 */}
       <section
         className="relative flex min-h-[212px] flex-col justify-center
                    overflow-hidden rounded-card bg-primary-soft
@@ -129,6 +140,7 @@ export default function FavoritesPage() {
 
       {/* 찜 목록 본문 */}
       <Card className="flex min-h-[819px] flex-col gap-6 !rounded-[24px] !px-5 !py-6 sm:!px-[43px]">
+        {/* 페이지 제목 */}
         <div className="flex flex-col gap-3">
           <h2 className="text-primary text-[32px] font-semibold sm:text-[38px]">
             찜페이지
@@ -136,14 +148,15 @@ export default function FavoritesPage() {
 
           <p className="text-ink-muted text-lg font-semibold sm:text-[21px]">
             찜한 학교{' '}
-            <span className="text-accent">{favorites.length}개</span>
+            <span className="text-accent">
+              {favorites.length}개
+            </span>
           </p>
         </div>
 
-        {/* 찜한 학교가 있을 때 */}
         {favorites.length > 0 ? (
           <>
-            {/* 검색 및 국가 필터 */}
+            {/* 국가 필터 및 검색 */}
             <div className="flex flex-col gap-3 sm:flex-row">
               <Select
                 icon="globe"
@@ -158,22 +171,43 @@ export default function FavoritesPage() {
                 className="w-full sm:flex-1"
                 placeholder="학교 이름 검색..."
                 value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
+                onChange={(event) =>
+                  setKeyword(event.target.value)
+                }
               />
             </div>
 
-            {/* 학교 카드 목록 */}
+            {/* 학교 카드 */}
             {filteredFavorites.length > 0 ? (
               <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-2 2xl:grid-cols-3">
                 {filteredFavorites.map((school) => (
                   <article
                     key={school.universityId}
-                    className="border-line flex min-h-[350px] min-w-0 flex-col
-                               gap-[13px] rounded-card border bg-white
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`${school.name} 상세 페이지로 이동`}
+                    onClick={() =>
+                      handleGoToSchool(school.universityId)
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.target === event.currentTarget &&
+                        (event.key === 'Enter' ||
+                          event.key === ' ')
+                      ) {
+                        event.preventDefault();
+                        handleGoToSchool(school.universityId);
+                      }
+                    }}
+                    className="border-line flex min-h-[270px] min-w-0
+                               cursor-pointer flex-col gap-[13px]
+                               rounded-card border bg-white
                                px-[22px] py-[22px] transition-shadow
-                               hover:shadow-card"
+                               hover:shadow-card
+                               focus-visible:outline-2
+                               focus-visible:outline-primary"
                   >
-                    {/* 학교명과 찜 버튼 */}
+                    {/* 학교 이름과 찜 버튼 */}
                     <div className="flex min-h-[62px] items-start justify-between gap-3">
                       <h3 className="text-ink min-w-0 flex-1 break-words text-[23px] font-bold">
                         {school.name}
@@ -183,9 +217,12 @@ export default function FavoritesPage() {
                         type="button"
                         aria-label={`${school.name} 찜 해제`}
                         title="찜 해제"
-                        onClick={() =>
-                          handleRemoveFavorite(school.universityId)
-                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRemoveFavorite(
+                            school.universityId,
+                          );
+                        }}
                         className="text-accent hover:bg-accent-soft
                                    flex size-10 shrink-0 items-center
                                    justify-center rounded-control
@@ -197,7 +234,8 @@ export default function FavoritesPage() {
 
                     {/* 국가 및 모집 인원 */}
                     <p className="text-ink-muted text-[19px] font-medium">
-                      {school.country} · 모집 인원 {school.recruitCount}명
+                      {school.country} · 모집 인원{' '}
+                      {school.recruitCount}명
                     </p>
 
                     {/* 주요 지원 조건 */}
@@ -205,18 +243,24 @@ export default function FavoritesPage() {
                       주요 조건 {school.condition}
                     </p>
 
-                    {/* 지원 상태 */}
+                    {/* 지원 가능 여부 */}
                     <div>
                       {school.eligibility === 'ELIGIBLE' && (
-                        <Badge tone="accent">지원 가능</Badge>
+                        <Badge tone="accent">
+                          지원 가능
+                        </Badge>
                       )}
 
                       {school.eligibility === 'INELIGIBLE' && (
-                        <Badge tone="danger">지원 불가</Badge>
+                        <Badge tone="danger">
+                          지원 불가
+                        </Badge>
                       )}
 
                       {school.eligibility === 'UNKNOWN' && (
-                        <Badge tone="caution">확인 필요</Badge>
+                        <Badge tone="caution">
+                          확인 필요
+                        </Badge>
                       )}
                     </div>
 
@@ -229,24 +273,11 @@ export default function FavoritesPage() {
                           </p>
                         </div>
                       )}
-
-                    {/* 상세 페이지 이동 */}
-                    <div className="mt-auto pt-4">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-full"
-                        onClick={() =>
-                          handleGoToSchool(school.universityId)
-                        }
-                      >
-                        학교 상세 보기
-                      </Button>
-                    </div>
                   </article>
                 ))}
               </div>
             ) : (
+              /* 검색 결과 없음 */
               <div className="bg-panel rounded-panel flex min-h-[300px] flex-col items-center justify-center gap-4 p-6 text-center">
                 <h3 className="text-ink text-2xl font-semibold">
                   검색 결과가 없습니다
@@ -269,13 +300,14 @@ export default function FavoritesPage() {
             )}
           </>
         ) : (
-          /* 찜 목록이 비었을 때 */
+          /* 빈 찜 목록 */
           <EmptyState
             className="min-h-[641px] !rounded-[18px] border border-line"
             title="아직 찜한 학교가 없습니다"
             description={
               <span>
-                협정교 목록에서 관심 있는 학교의 별 아이콘을 눌러 찜해 보세요.
+                협정교 목록에서 관심 있는 학교의 별 아이콘을
+                눌러 찜해 보세요.
                 <br />
                 찜한 학교는 이곳에서 모아볼 수 있습니다.
               </span>
