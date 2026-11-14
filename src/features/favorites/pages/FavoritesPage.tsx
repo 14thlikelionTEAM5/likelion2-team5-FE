@@ -12,8 +12,6 @@ import Select from '@/shared/ui/Select';
 
 import heroLight from '@/assets/decor/hero-light.svg';
 
-// UI 테스트용 임시 데이터
-// 실제 API 연동 시 서버 응답으로 교체 예정
 type FavoriteSchool = {
   universityId: number;
   name: string;
@@ -24,6 +22,7 @@ type FavoriteSchool = {
   ineligibleReason?: string;
 };
 
+// API 연동 전 화면 테스트용 데이터
 const INITIAL_FAVORITES: FavoriteSchool[] = [
   {
     universityId: 4,
@@ -93,7 +92,7 @@ export default function FavoritesPage() {
     });
   }, [favorites, country, keyword]);
 
-  // 찜 해제 (현재는 임시 데이터에서 제거)
+  // 찜 해제 (API 연동 전 임시 처리)
   const handleRemoveFavorite = (universityId: number) => {
     setFavorites((previous) =>
       previous.filter(
@@ -102,19 +101,18 @@ export default function FavoritesPage() {
     );
   };
 
-  // 카드 클릭 시 학교 상세 페이지로 이동
+  // 카드 클릭 → 해당 학교의 상세 페이지 이동
   const handleGoToSchool = (universityId: number) => {
     navigate(PATHS.schoolDetail(universityId));
   };
 
-  // 협정교 목록으로 이동
   const handleGoToSchoolList = () => {
     navigate(PATHS.schools);
   };
 
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-9">
-      {/* 히어로 배너 */}
+      {/* 상단 배너 */}
       <section
         className="relative flex min-h-[212px] flex-col justify-center
                    overflow-hidden rounded-card bg-primary-soft
@@ -138,9 +136,8 @@ export default function FavoritesPage() {
         </div>
       </section>
 
-      {/* 찜 목록 본문 */}
+      {/* 찜 목록 */}
       <Card className="flex min-h-[819px] flex-col gap-6 !rounded-[24px] !px-5 !py-6 sm:!px-[43px]">
-        {/* 페이지 제목 */}
         <div className="flex flex-col gap-3">
           <h2 className="text-primary text-[32px] font-semibold sm:text-[38px]">
             찜페이지
@@ -196,7 +193,10 @@ export default function FavoritesPage() {
                           event.key === ' ')
                       ) {
                         event.preventDefault();
-                        handleGoToSchool(school.universityId);
+
+                        handleGoToSchool(
+                          school.universityId,
+                        );
                       }
                     }}
                     className="border-line flex min-h-[270px] min-w-0
@@ -207,7 +207,7 @@ export default function FavoritesPage() {
                                focus-visible:outline-2
                                focus-visible:outline-primary"
                   >
-                    {/* 학교 이름과 찜 버튼 */}
+                    {/* 학교명 및 찜 버튼 */}
                     <div className="flex min-h-[62px] items-start justify-between gap-3">
                       <h3 className="text-ink min-w-0 flex-1 break-words text-[23px] font-bold">
                         {school.name}
@@ -219,6 +219,7 @@ export default function FavoritesPage() {
                         title="찜 해제"
                         onClick={(event) => {
                           event.stopPropagation();
+
                           handleRemoveFavorite(
                             school.universityId,
                           );
@@ -243,7 +244,7 @@ export default function FavoritesPage() {
                       주요 조건 {school.condition}
                     </p>
 
-                    {/* 지원 가능 여부 */}
+                    {/* 지원 자격 */}
                     <div>
                       {school.eligibility === 'ELIGIBLE' && (
                         <Badge tone="accent">
@@ -300,7 +301,7 @@ export default function FavoritesPage() {
             )}
           </>
         ) : (
-          /* 빈 찜 목록 */
+          /* 찜 목록이 비어 있는 경우 */
           <EmptyState
             className="min-h-[641px] !rounded-[18px] border border-line"
             title="아직 찜한 학교가 없습니다"
