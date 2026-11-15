@@ -74,15 +74,27 @@ export default function PlanEditPage() {
         className="relative flex min-h-[212px] flex-col justify-center overflow-hidden rounded-card bg-primary-soft bg-cover bg-center px-6 py-8 sm:px-11"
         style={{ backgroundImage: `url("${heroLight}")` }}
       >
-        <p className="mb-3 text-sm font-semibold text-ink-sub">수강계획</p>
-        <h1 className="text-[30px] font-bold text-primary sm:text-[34px]">수강계획 편집</h1>
-        <p className="mt-3 text-base text-ink-sub sm:text-lg">파견교별 과목을 담고 예상 인정 학점을 확인하세요.</p>
+        <div className="relative z-10 flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="뒤로가기"
+            title="뒤로가기"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-white text-xl font-semibold text-primary transition-colors hover:bg-primary-soft"
+          >
+            ←
+          </button>
+          <div className="min-w-0">
+            <p className="mb-2 text-sm font-semibold text-ink-sub">수강계획</p>
+            <h1 className="text-[30px] font-bold text-primary sm:text-[34px]">수강계획 편집</h1>
+            <p className="mt-2 text-base text-ink-sub sm:text-lg">파견교별 과목을 담고 예상 인정 학점을 확인하세요.</p>
+          </div>
+        </div>
       </section>
 
       <div className="rounded-[24px] bg-white px-5 py-9 sm:px-10">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <button type="button" onClick={() => navigate(-1)} className="text-sm font-semibold text-primary hover:underline">← 목록으로 돌아가기</button>
-          <span className="text-[18px] text-ink-muted">University of Groningen · 2027-1학기</span>
+        <div className="mb-6 text-left">
+          <p className="text-[18px] text-ink-muted">University of Groningen · 2027-1학기</p>
         </div>
 
         <section className="mb-6 rounded-[18px] border border-line bg-white px-5 py-6">
