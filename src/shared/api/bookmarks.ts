@@ -54,3 +54,19 @@ export const useRemoveBookmark = () => {
     },
   });
 };
+
+export const addBookmark = (universityId: number) =>
+  api<BookmarkStatusResponse>('/bookmarks', {
+    method: 'POST',
+    body: { universityId },
+  });
+
+export const useAddBookmark = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addBookmark,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
+    },
+  });
+};
