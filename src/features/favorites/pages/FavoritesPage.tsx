@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { PATHS } from '@/app/paths';
+import { useBookmarks } from '@/shared/api/bookmarks';
 import Badge from '@/shared/ui/Badge';
 import Button from '@/shared/ui/Button';
 import Card from '@/shared/ui/Card';
@@ -12,51 +13,11 @@ import Select from '@/shared/ui/Select';
 
 import heroLight from '@/assets/decor/hero-light.svg';
 
-type FavoriteSchool = {
-  universityId: number;
-  name: string;
-  country: string;
-  recruitCount: number;
-  condition: string;
-  eligibility: 'ELIGIBLE' | 'INELIGIBLE' | 'UNKNOWN';
-  ineligibleReason?: string;
-};
-
-// API 연동 전 화면 테스트용 데이터
-const INITIAL_FAVORITES: FavoriteSchool[] = [
-  {
-    universityId: 4,
-    name: 'University of Groningen',
-    country: '네덜란드',
-    recruitCount: 2,
-    condition: '학점 3.0 이상 · IELTS 6.5',
-    eligibility: 'ELIGIBLE',
-  },
-  {
-    universityId: 31,
-    name: 'Texas State University',
-    country: '미국',
-    recruitCount: 3,
-    condition: '학점 3.4 이상 · IELTS 6.5',
-    eligibility: 'INELIGIBLE',
-    ineligibleReason: '학점 부족',
-  },
-  {
-    universityId: 12,
-    name: 'Florida International University',
-    country: '미국',
-    recruitCount: 3,
-    condition: '학점 3.38 이상 · IELTS 6.5',
-    eligibility: 'INELIGIBLE',
-    ineligibleReason: '학점 부족',
-  },
-];
-
 export default function FavoritesPage() {
   const navigate = useNavigate();
 
-  const [favorites, setFavorites] =
-    useState<FavoriteSchool[]>(INITIAL_FAVORITES);
+  const { data, isLoading, error } = useBookmarks();
+  const favorites = data?.universities ?? [];
 
   const [country, setCountry] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -91,15 +52,6 @@ export default function FavoritesPage() {
       return matchesCountry && matchesKeyword;
     });
   }, [favorites, country, keyword]);
-
-  // 찜 해제 (API 연동 전 임시 처리)
-  const handleRemoveFavorite = (universityId: number) => {
-    setFavorites((previous) =>
-      previous.filter(
-        (school) => school.universityId !== universityId,
-      ),
-    );
-  };
 
   // 카드 클릭 → 해당 학교의 상세 페이지 이동
   const handleGoToSchool = (universityId: number) => {
@@ -151,7 +103,13 @@ export default function FavoritesPage() {
           </p>
         </div>
 
-        {favorites.length > 0 ? (
+        {isLoading ? (
+          <p className="text-ink-muted py-8">찜 목록을 불러오는 중...</p>
+        ) : error ? (
+          <p role="alert" className="text-danger py-8">
+            찜 목록을 불러오지 못했습니다. {error.message}
+          </p>
+        ) : favorites.length > 0 ? (
           <>
             {/* 국가 필터 및 검색 */}
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -216,14 +174,8 @@ export default function FavoritesPage() {
                       <button
                         type="button"
                         aria-label={`${school.name} 찜 해제`}
-                        title="찜 해제"
-                        onClick={(event) => {
-                          event.stopPropagation();
-
-                          handleRemoveFavorite(
-                            school.universityId,
-                          );
-                        }}
+                        title="찜 해제 기능 준비 중"
+                        disabled
                         className="text-accent hover:bg-accent-soft
                                    flex size-10 shrink-0 items-center
                                    justify-center rounded-control
@@ -236,29 +188,33 @@ export default function FavoritesPage() {
                     {/* 국가 및 모집 인원 */}
                     <p className="text-ink-muted text-[19px] font-medium">
                       {school.country} · 모집 인원{' '}
-                      {school.recruitCount}명
+                      {school.quota === null ? '미정' : `${school.quota}명`}
                     </p>
 
                     {/* 주요 지원 조건 */}
                     <p className="text-ink-sub text-[18px] leading-relaxed">
-                      주요 조건 {school.condition}
+                      주요 조건{' '}
+                      {school.minGpa === null ? '학점 기준 미확인' : `학점 ${school.minGpa} 이상`}
+                      {school.languageRequirements?.length
+                        ? ` · ${school.languageRequirements.map((requirement) => `${requirement.testType} ${requirement.minScore}`).join(' / ')}`
+                        : ''}
                     </p>
 
                     {/* 지원 자격 */}
                     <div>
-                      {school.eligibility === 'ELIGIBLE' && (
+                      {school.eligibility.status === 'ELIGIBLE' && (
                         <Badge tone="accent">
                           지원 가능
                         </Badge>
                       )}
 
-                      {school.eligibility === 'INELIGIBLE' && (
+                      {school.eligibility.status === 'NOT_ELIGIBLE' && (
                         <Badge tone="danger">
                           지원 불가
                         </Badge>
                       )}
 
-                      {school.eligibility === 'UNKNOWN' && (
+                      {school.eligibility.status === 'NEEDS_CHECK' && (
                         <Badge tone="caution">
                           확인 필요
                         </Badge>
@@ -266,11 +222,11 @@ export default function FavoritesPage() {
                     </div>
 
                     {/* 지원 불가 사유 */}
-                    {school.eligibility === 'INELIGIBLE' &&
-                      school.ineligibleReason && (
+                    {school.eligibility.status === 'NOT_ELIGIBLE' &&
+                      school.eligibility.message && (
                         <div className="bg-panel rounded-small px-3 py-2">
                           <p className="text-danger text-base">
-                            사유: {school.ineligibleReason}
+                            사유: {school.eligibility.message}
                           </p>
                         </div>
                       )}
