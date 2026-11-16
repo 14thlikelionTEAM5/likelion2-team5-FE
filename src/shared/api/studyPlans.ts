@@ -1,7 +1,12 @@
 
-import { useQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from './client';
 
+// 수강계획 목록
 export type StudyPlanSummary = {
   studyPlanId: number;
   universityId: number;
@@ -13,6 +18,7 @@ export type StudyPlanSummary = {
   updatedAt: string;
 };
 
+// 수강계획에 담긴 과목
 export type StudyPlanItem = {
   itemId: number;
   itemType: 'DIRECT' | 'REFERENCE';
@@ -20,11 +26,15 @@ export type StudyPlanItem = {
   foreignCredit: number | null;
   sourceCourseId: number | null;
   homeCourseId: number | null;
-  recognitionType: 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
+  recognitionType:
+    | 'MAJOR_REQUIRED'
+    | 'MAJOR_ELECTIVE'
+    | 'GENERAL';
   expectedCredit: number | null;
   creditLimitWarning: boolean;
 };
 
+// 수강계획 상세
 export type StudyPlanDetail = {
   studyPlanId: number;
   name: string;
@@ -41,21 +51,59 @@ export type StudyPlanDetail = {
   semesterCreditLimitWarning: boolean;
 };
 
+// 수강계획 생성 요청
+export type CreateStudyPlanRequest = {
+  universityId: number;
+  name: string;
+};
+
+// 수강계획 생성 응답
+export type CreateStudyPlanResponse = {
+  studyPlanId: number;
+};
+
+// GET - 목록 조회
 export const getStudyPlans = () =>
   api<StudyPlanSummary[]>('/study-plans');
 
+// GET - 상세 조회
 export const getStudyPlanDetail = (studyPlanId: number) =>
   api<StudyPlanDetail>(`/study-plans/${studyPlanId}`);
 
+// POST - 수강계획 생성
+export const createStudyPlan = (
+  body: CreateStudyPlanRequest,
+) =>
+  api<CreateStudyPlanResponse>('/study-plans', {
+    method: 'POST',
+    body,
+  });
+
+// 목록 조회 훅
 export const useStudyPlans = () =>
   useQuery({
     queryKey: ['study-plans'],
     queryFn: getStudyPlans,
   });
 
+// 상세 조회 훅
 export const useStudyPlanDetail = (studyPlanId: number) =>
   useQuery({
     queryKey: ['study-plans', studyPlanId],
     queryFn: () => getStudyPlanDetail(studyPlanId),
     enabled: Number.isInteger(studyPlanId) && studyPlanId > 0,
   });
+
+// 수강계획 생성 훅
+export const useCreateStudyPlan = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createStudyPlan,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['study-plans'],
+      });
+    },
+  });
+};
