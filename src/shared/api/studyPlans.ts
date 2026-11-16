@@ -1,4 +1,3 @@
-
 import {
   useMutation,
   useQuery,
@@ -104,6 +103,35 @@ export const useCreateStudyPlan = () => {
       queryClient.invalidateQueries({
         queryKey: ['study-plans'],
       });
+    },
+  });
+};
+
+// PATCH - 수강계획 이름 수정
+export type RenameStudyPlanRequest = {
+  studyPlanId: number;
+  name: string;
+};
+
+export type RenameStudyPlanResponse = {
+  studyPlanId: number;
+  name: string;
+  updatedAt: string;
+};
+
+export const renameStudyPlan = ({ studyPlanId, name }: RenameStudyPlanRequest) =>
+  api<RenameStudyPlanResponse>(`/study-plans/${studyPlanId}`, {
+    method: 'PATCH',
+    body: { name },
+  });
+
+export const useRenameStudyPlan = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: renameStudyPlan,
+    onSuccess: ({ studyPlanId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['study-plans'] });
+      void queryClient.invalidateQueries({ queryKey: ['study-plans', studyPlanId] });
     },
   });
 };

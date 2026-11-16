@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
+import { useRenameStudyPlan } from '@/shared/api/studyPlans';
 
 type RecognitionType = 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
 type PlanItem = {
@@ -50,6 +51,9 @@ export default function PlanEditPage() {
   const [recognitionType, setRecognitionType] = useState<RecognitionType>('MAJOR_ELECTIVE');
   const [homeCourse, setHomeCourse] = useState('');
   const [message, setMessage] = useState('');
+  const [planName, setPlanName] = useState('');
+  const [renameMessage, setRenameMessage] = useState('');
+  const renameMutation = useRenameStudyPlan();
 
   useEffect(() => {
     let active = true;
@@ -57,6 +61,8 @@ export default function PlanEditPage() {
       setError('');
       setIsLoading(true);
       setPlan(null);
+      setPlanName('');
+      setRenameMessage('');
       setDemoItems([]);
       setHiddenIds([]);
       if (!planId || !/^[1-9]\d*$/.test(planId)) {
@@ -71,6 +77,7 @@ export default function PlanEditPage() {
           throw new Error('수강계획 상세 API 응답이 올바르지 않습니다. 백엔드 연결과 응답 데이터를 확인해 주세요.');
         }
         setPlan(result);
+        setPlanName(result.name);
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : '수강계획을 불러오지 못했습니다.');
       } finally {
@@ -80,6 +87,28 @@ export default function PlanEditPage() {
     void load();
     return () => { active = false; };
   }, [planId, reloadKey]);
+
+  const handleRename = async () => {
+    if (!plan || renameMutation.isPending) return;
+    const name = planName.trim();
+    if (!name || name.length > 100) {
+      setRenameMessage('계획 이름은 공백 제외 1~100자로 입력해 주세요.');
+      return;
+    }
+    if (name === plan.name) {
+      setRenameMessage('변경된 이름이 없습니다.');
+      return;
+    }
+    setRenameMessage('');
+    try {
+      const updated = await renameMutation.mutateAsync({ studyPlanId: plan.studyPlanId, name });
+      setPlan((previous) => previous ? { ...previous, name: updated.name } : previous);
+      setPlanName(updated.name);
+      setRenameMessage('계획 이름을 수정했습니다.');
+    } catch (err) {
+      setRenameMessage(err instanceof Error ? err.message : '계획 이름 수정에 실패했습니다.');
+    }
+  };
 
   const visibleItems = plan?.items.filter((item) => !hiddenIds.includes(item.itemId)) ?? [];
   const addDemoCourse = () => {
@@ -116,6 +145,31 @@ export default function PlanEditPage() {
           <div className="mb-6 text-left">
             <p className="text-[18px] text-ink-muted">{plan.universityName} · {plan.name}</p>
           </div>
+
+          <section className="mb-6 rounded-[18px] border border-line bg-white px-5 py-6">
+            <h2 className="mb-4 text-[25px] font-semibold text-ink">수강계획 이름 수정</h2>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex min-w-[220px] flex-1 flex-col gap-2 text-[17px] font-semibold text-ink">
+                계획 이름
+                <input
+                  className={inputClass}
+                  value={planName}
+                  maxLength={100}
+                  onChange={(event) => { setPlanName(event.target.value); setRenameMessage(''); }}
+                  placeholder="수강계획 이름"
+                />
+              </label>
+              <button
+                type="button"
+                className="min-h-[52px] rounded-[10px] bg-primary px-6 text-[17px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => void handleRename()}
+                disabled={renameMutation.isPending}
+              >
+                {renameMutation.isPending ? '수정 중...' : '이름 수정'}
+              </button>
+            </div>
+            {renameMessage && <p role="status" className="mt-3 text-sm text-ink-sub">{renameMessage}</p>}
+          </section>
 
           <section className="mb-6 rounded-[18px] border border-line bg-white px-5 py-6">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
