@@ -57,17 +57,6 @@ export type DeleteStudyPlanResponse = {
   studyPlanId: number;
 };
 
-export type RenameStudyPlanRequest = {
-  studyPlanId: number;
-  name: string;
-};
-
-export type RenameStudyPlanResponse = {
-  studyPlanId: number;
-  name: string;
-  updatedAt: string;
-};
-
 export const getStudyPlans = () =>
   api<StudyPlanSummary[]>('/study-plans');
 
@@ -83,12 +72,6 @@ export const createStudyPlan = (body: CreateStudyPlanRequest) =>
 export const deleteStudyPlan = (studyPlanId: number) =>
   api<DeleteStudyPlanResponse>(`/study-plans/${studyPlanId}`, {
     method: 'DELETE',
-  });
-
-export const renameStudyPlan = ({ studyPlanId, name }: RenameStudyPlanRequest) =>
-  api<RenameStudyPlanResponse>(`/study-plans/${studyPlanId}`, {
-    method: 'PATCH',
-    body: { name },
   });
 
 export const useStudyPlans = () =>
@@ -114,14 +97,5 @@ export const useDeleteStudyPlan = () => {
   return useMutation({
     mutationFn: deleteStudyPlan,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['study-plans'] }),
-  });
-};
-
-export const useRenameStudyPlan = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: renameStudyPlan,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['study-plans'] }),
   });
 };
