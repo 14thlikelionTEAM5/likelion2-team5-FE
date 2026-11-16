@@ -1,0 +1,161 @@
+.passhufs-landing {
+  font-family: Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  color: #141b2d;
+  background: #eaedf1;
+  --navy: #263657;
+  --muted: #627086;
+}
+
+.passhufs-landing * { box-sizing: border-box; }
+.passhufs-landing a { color: inherit; text-decoration: none; }
+.passhufs-landing a:focus-visible { outline: 3px solid #5182cb; outline-offset: 4px; }
+.passhufs-landing p { line-height: 1.6; }
+.passhufs-landing .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .65rem clamp(1rem, 2.4vw, 2rem);
+  background: #fff;
+  border-bottom: 1px solid #dce3ed;
+}
+.passhufs-landing .header img { display: block; width: clamp(7rem, 11vw, 9rem); height: auto; }
+.passhufs-landing .header nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(.75rem, 2.5vw, 1.55rem);
+  font-size: .875rem;
+}
+.passhufs-landing .header nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  white-space: nowrap;
+}
+.passhufs-landing .header nav .button { padding-inline: .9rem; }
+.passhufs-landing .button {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .42rem 1rem;
+  border-radius: .65rem;
+  background: var(--navy);
+  color: white;
+  font-weight: 700;
+}
+.passhufs-landing .button:hover { background: #384e76; }
+.passhufs-landing .cta { padding: .9rem 1.55rem; font-size: .9rem; box-shadow: 0 3px 5px #15234726; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .passhufs-landing .start-button {
+    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+  .passhufs-landing .start-button span { transition: transform 180ms ease; }
+  .passhufs-landing .start-button:is(:hover, :focus-visible) {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 14px #15234735;
+  }
+  .passhufs-landing .start-button:is(:hover, :focus-visible) span { transform: translateX(4px); }
+  .passhufs-landing .start-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px #15234726;
+  }
+}
+.passhufs-landing .intro {
+  padding-top: clamp(2rem, 7vw, 6rem);
+  background: url("./landing-background.png") center / cover no-repeat,
+    radial-gradient(ellipse at 73% 85%, #d5e0e6, transparent 31%), #eaedf1;
+}
+.passhufs-landing .wrap { width: min(calc(100% - 3rem), 75rem); margin-inline: auto; }
+.passhufs-landing .hero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(2rem, 4vw, 4.5rem);
+  align-items: center;
+  min-height: 58svh;
+  margin-block: 0;
+  padding-block: clamp(2.5rem, 5.5vw, 5rem);
+}
+.passhufs-landing .badge {
+  display: inline-block;
+  margin: 0 0 .7rem;
+  padding: .2rem .65rem;
+  border: 1px solid #dbe5f1;
+  border-radius: 999px;
+  background: #eff5fc;
+  color: #38567d;
+  font-size: .72rem;
+  font-weight: 700;
+}
+.passhufs-landing h1, .passhufs-landing h2, .passhufs-landing h3 { margin: 0; letter-spacing: -.045em; }
+.passhufs-landing h1 { font-size: clamp(1.85rem, 3.25vw, 3.2rem); line-height: 1.13; }
+.passhufs-landing .hero h1 { font-size: clamp(1.85rem, 3.25vw, 3.2rem); word-break: keep-all; }
+.passhufs-landing .hero .badge { font-size: clamp(.76rem, 1vw, .84rem); }
+.passhufs-landing .hero p:not(.badge) { margin: 1rem 0 1.55rem; font-size: clamp(.95rem, 1.35vw, 1.15rem); word-break: keep-all; }
+.passhufs-landing .hero .cta { padding: .85rem 1.55rem; font-size: .95rem; }
+.passhufs-landing .preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: .85rem;
+  box-shadow: 0 12px 25px #161b3030;
+}
+.passhufs-landing .section { padding: clamp(2.75rem, 5vw, 5rem) 1.25rem; text-align: center; }
+.passhufs-landing .section h2 { font-size: clamp(1.4rem, 2.2vw, 2.2rem); }
+.passhufs-landing .muted { color: var(--muted); font-size: .9rem; margin: .45rem 0 0; }
+.passhufs-landing .features { padding-top: clamp(3.5rem, 7vw, 6rem); }
+.passhufs-landing .cards, .passhufs-landing .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.35rem; width: min(100%, 780px); margin: 2.45rem auto 0; }
+.passhufs-landing .cards article { display: flex; flex-direction: column; padding: 1.25rem; background: #f8f9fb; border: 1px solid #e1e6ed; border-radius: .85rem; text-align: left; }
+.passhufs-landing .number { align-self: flex-start; padding: .38rem .52rem; margin-bottom: .85rem; border-radius: .55rem; background: #e5ecf8; color: var(--navy); font-size: .75rem; font-weight: 800; }
+.passhufs-landing h3 { font-size: 1rem; }
+.passhufs-landing .cards p, .passhufs-landing .steps p { color: var(--muted); font-size: .81rem; margin: .55rem 0 1rem; }
+.passhufs-landing .cards footer { margin-top: auto; padding-top: .75rem; border-top: 1px solid #e3e8ee; color: #38567d; font-size: .73rem; font-weight: 700; }
+.passhufs-landing .features h2 { font-size: clamp(1.6rem, 2.8vw, 2.5rem); }
+.passhufs-landing .features > .muted { font-size: 1rem; }
+.passhufs-landing .cards { width: min(100%, 58rem); }
+.passhufs-landing .cards article { padding: clamp(1.35rem, 2vw, 1.75rem); }
+.passhufs-landing .cards h3 { font-size: clamp(1.05rem, 1.55vw, 1.25rem); }
+.passhufs-landing .cards p { font-size: .95rem; }
+.passhufs-landing .cards footer { font-size: .85rem; }
+.passhufs-landing .guide { background: #f7f8fa; padding-block: clamp(3.5rem, 6vw, 6rem); }
+.passhufs-landing .guide h2 { font-size: clamp(1.6rem, 2.8vw, 2.5rem); }
+.passhufs-landing .guide > .muted { font-size: 1rem; }
+.passhufs-landing .steps {
+  list-style: none;
+  padding: 0;
+  width: min(100%, 58rem);
+  gap: 2rem;
+  margin-top: clamp(2.5rem, 4vw, 3.5rem);
+  --step-size: clamp(3.25rem, 5vw, 3.75rem);
+}
+.passhufs-landing .steps li { position: relative; }
+.passhufs-landing .steps li:not(:last-child)::after { content: "→"; color: #6586a7; position: absolute; right: -1rem; top: calc(var(--step-size) / 2); transform: translate(50%, -50%); font-size: 1.25rem; }
+.passhufs-landing .step-number { display: inline-grid; place-items: center; width: var(--step-size); height: var(--step-size); margin-bottom: 1rem; border: 1.5px solid var(--navy); border-radius: .85rem; background: white; color: var(--navy); font-size: 1.25rem; font-weight: 800; }
+.passhufs-landing .steps h3 { font-size: clamp(1.05rem, 1.55vw, 1.25rem); }
+.passhufs-landing .steps p { margin: .45rem auto 0; max-width: 15rem; font-size: .95rem; word-break: keep-all; }
+.passhufs-landing .closing {
+  padding-block: clamp(4rem, 8vw, 7rem);
+  background: url("./landing-background.png") center / cover no-repeat;
+}
+.passhufs-landing .closing h2 {
+  font-size: clamp(1.7rem, 3.2vw, 2.75rem);
+  line-height: 1.25;
+  word-break: keep-all;
+}
+.passhufs-landing .closing .muted {
+  margin: 1rem 0 1.75rem;
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  word-break: keep-all;
+}
+.passhufs-landing .closing .cta {
+  padding: 1rem 1.9rem;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 680px) {
+  .passhufs-landing .wrap { width: min(88%, 450px); }
+  .passhufs-landing .hero, .passhufs-landing .cards, .passhufs-landing .steps { grid-template-columns: 1fr; }
+  .passhufs-landing .hero { min-height: auto; gap: 2rem; text-align: center; }
+  .passhufs-landing .cards { max-width: 450px; gap: .75rem; }
+  .passhufs-landing .steps { gap: 2.5rem; }
+  .passhufs-landing .steps li:not(:last-child)::after { content: "↓"; top: auto; right: 0; left: 0; bottom: -1.95rem; transform: none; }
+}
