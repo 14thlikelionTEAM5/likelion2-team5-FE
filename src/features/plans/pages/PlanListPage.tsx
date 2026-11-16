@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
-import { useCreateStudyPlan } from '@/shared/api/studyPlans';
+import { useCreateStudyPlan, useDeleteStudyPlan } from '@/shared/api/studyPlans';
 
 type StudyPlanSummary = {
   studyPlanId: number;
@@ -52,6 +52,7 @@ export default function PlanListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState('');
   const [notice, setNotice] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -59,6 +60,7 @@ export default function PlanListPage() {
   const [createUniversityId, setCreateUniversityId] = useState('');
   const [createError, setCreateError] = useState('');
   const createPlan = useCreateStudyPlan();
+  const deletePlan = useDeleteStudyPlan();
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -157,9 +159,28 @@ export default function PlanListPage() {
     return () => { active = false; };
   }, [reloadKey]);
 
-  const handleDelete = () => {
-    setDeleteTargetId(null);
-    setNotice('실제 삭제 API는 아직 연결되지 않았습니다. 수강계획이 삭제되지 않았습니다.');
+  const handleDelete = async () => {
+    if (deleteTargetId === null || deletePlan.isPending) return;
+    setDeleteError('');
+    if (USE_MOCK) {
+      setPlans((previous) => previous.filter((plan) => plan.studyPlanId !== deleteTargetId));
+      setDetails((previous) => {
+        const next = { ...previous };
+        delete next[deleteTargetId];
+        return next;
+      });
+      setDeleteTargetId(null);
+      setNotice('Mock 계획을 목록에서 제거했습니다. 서버에는 변경사항이 저장되지 않습니다.');
+      return;
+    }
+    try {
+      await deletePlan.mutateAsync(deleteTargetId);
+      setDeleteTargetId(null);
+      setNotice('수강계획이 삭제되었습니다.');
+      setReloadKey((key) => key + 1);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : '수강계획 삭제에 실패했습니다.');
+    }
   };
 
   return (
@@ -244,7 +265,7 @@ export default function PlanListPage() {
                   </p>
                   <div className="flex items-center gap-3">
                     <button type="button" onClick={() => USE_MOCK ? setNotice('Mock 계획의 편집 기능은 제공하지 않습니다.') : navigate(PATHS.planEdit(plan.studyPlanId))} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">편집</button>
-                    <button type="button" onClick={() => setDeleteTargetId(plan.studyPlanId)} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">삭제</button>
+                    <button type="button" onClick={() => { setDeleteError(''); setDeleteTargetId(plan.studyPlanId); }} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">삭제</button>
                   </div>
                 </div>
               </article>
@@ -281,17 +302,18 @@ export default function PlanListPage() {
 
       {deleteTargetId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setDeleteTargetId(null);
+          if (event.target === event.currentTarget && !deletePlan.isPending) setDeleteTargetId(null);
         }}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="delete-plan-title" className="w-full max-w-[416px] rounded-[18px] bg-white p-8 shadow-xl">
             <div className="mb-6 flex items-start justify-between gap-3">
               <h3 id="delete-plan-title" className="text-[24px] font-semibold text-ink">삭제하시겠습니까?</h3>
-              <button type="button" aria-label="닫기" onClick={() => setDeleteTargetId(null)} className="text-2xl text-ink-muted">×</button>
+              <button type="button" aria-label="닫기" disabled={deletePlan.isPending} onClick={() => setDeleteTargetId(null)} className="text-2xl text-ink-muted">×</button>
             </div>
-            <p className="mb-5 text-sm text-ink-muted">삭제 API 연동 전이므로 실제 삭제되지는 않습니다.</p>
+            <p className="mb-5 text-sm text-ink-muted">{USE_MOCK ? "Mock 모드: 목록에서만 제거되며 서버에는 저장되지 않습니다." : "이 계획과 연결된 과목도 함께 삭제되며 되돌릴 수 없습니다."}</p>
+            {deleteError && <p role="alert" className="mb-4 text-sm text-danger">{deleteError}</p>}
             <div className="flex gap-3">
-              <button type="button" onClick={() => setDeleteTargetId(null)} className="min-h-[55px] flex-1 rounded-[8px] border border-line font-semibold text-ink">취소</button>
-              <button type="button" onClick={handleDelete} className="min-h-[55px] flex-1 rounded-[8px] bg-primary font-semibold text-white">확인</button>
+              <button type="button" disabled={deletePlan.isPending} onClick={() => setDeleteTargetId(null)} className="min-h-[55px] flex-1 rounded-[8px] border border-line font-semibold text-ink disabled:opacity-50">취소</button>
+              <button type="button" disabled={deletePlan.isPending} onClick={() => { void handleDelete(); }} className="min-h-[55px] flex-1 rounded-[8px] bg-primary font-semibold text-white disabled:opacity-50">{deletePlan.isPending ? "삭제 중..." : "확인"}</button>
             </div>
           </div>
         </div>
