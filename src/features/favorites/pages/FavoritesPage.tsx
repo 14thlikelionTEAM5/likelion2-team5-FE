@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { PATHS } from '@/app/paths';
-import { useBookmarks } from '@/shared/api/bookmarks';
+import { useBookmarks, useRemoveBookmark } from '@/shared/api/bookmarks';
 import Badge from '@/shared/ui/Badge';
 import Button from '@/shared/ui/Button';
 import Card from '@/shared/ui/Card';
@@ -17,6 +17,7 @@ export default function FavoritesPage() {
   const navigate = useNavigate();
 
   const { data, isLoading, error } = useBookmarks();
+  const { mutate: removeBookmark, isPending: isRemoving, variables: removingId, error: removeError } = useRemoveBookmark();
   const favorites = data?.universities ?? [];
 
   const [country, setCountry] = useState('');
@@ -103,6 +104,12 @@ export default function FavoritesPage() {
           </p>
         </div>
 
+        {removeError && (
+          <p role="alert" className="text-danger text-sm">
+            찜 해제에 실패했습니다. {removeError.message}
+          </p>
+        )}
+
         {isLoading ? (
           <p className="text-ink-muted py-8">찜 목록을 불러오는 중...</p>
         ) : error ? (
@@ -174,14 +181,18 @@ export default function FavoritesPage() {
                       <button
                         type="button"
                         aria-label={`${school.name} 찜 해제`}
-                        title="찜 해제 기능 준비 중"
-                        disabled
+                        title="찜 해제"
+                        disabled={isRemoving}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          removeBookmark(school.universityId);
+                        }}
                         className="text-accent hover:bg-accent-soft
                                    flex size-10 shrink-0 items-center
                                    justify-center rounded-control
                                    text-[29px] transition-colors"
                       >
-                        <span aria-hidden="true">★</span>
+                        <span aria-hidden="true">{isRemoving && removingId === school.universityId ? '…' : '★'}</span>
                       </button>
                     </div>
 
