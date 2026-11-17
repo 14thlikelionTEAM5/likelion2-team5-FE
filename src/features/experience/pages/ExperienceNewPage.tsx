@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { PATHS, type ExperienceKind } from '@/app/paths';
@@ -22,23 +22,40 @@ import ReportPaste, { MAX_REPORT_LENGTH } from '../components/ReportPaste';
 import SchoolSearch from '../components/SchoolSearch';
 import SpecFormFields from '../components/SpecFormFields';
 import StepTitle from '../components/StepTitle';
+import { useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '@/shared/api/client';
+import {
+  extractReturnReport,
+  recordAiConsent,
+  saveAdmissionReport,
+  saveCourseCase,
+  saveReturnReport,
+  useCheckDuplicate,
+  useExperienceMutation,
+  useMyExperiences,
+  type ExperienceType,
+} from '@/shared/api/experiences';
+import { useUniversity } from '@/shared/api/universities';
+import { useMyProfile } from '@/shared/api/users';
+import type { LanguageTestType } from '@/shared/types/enums';
 import {
   creditError,
   EMPTY_CREDIT,
   EMPTY_REPORT,
   emptySpec,
-  extractReport,
-  findDuplicate,
-  getMyReportCourses,
-  getSchoolOption,
-  hasConsented,
-  MY_CONDITION,
-  saveConsent,
+  reportCoursesOf,
+  reportFormError,
+  toCondition,
+  toCreditBody,
+  toMyExperiences,
+  toReportBody,
+  toReportForm,
+  toSemester,
   type CreditForm,
   type ReportForm,
   type SchoolOption,
   type SpecForm,
-} from '../mock';
+} from '../model';
 
 const KINDS: ExperienceKind[] = ['report', 'spec', 'credit'];
 const KIND_LABEL: Record<ExperienceKind, string> = {
@@ -59,11 +76,28 @@ export default function ExperienceNewPage() {
   const [params, setParams] = useSearchParams();
   const kind = KINDS.find((k) => k === params.get('type')) ?? 'report';
 
-  const [school, setSchool] = useState<SchoolOption | null>(() =>
-    getSchoolOption(Number(params.get('universityId'))),
-  );
+  const queryClient = useQueryClient();
+  const { data: profile } = useMyProfile();
+  const condition = toCondition(profile);
+  const { data: mineRaw } = useMyExperiences();
+  const mine = mineRaw && toMyExperiences(mineRaw);
+
+  const [school, setSchool] = useState<SchoolOption | null>(null);
+  const presetId = Number(params.get('universityId'));
+  const preset = useUniversity(presetId);
+  const presetApplied = useRef(false);
+  // 협정교 상세에서 들어오면 학교를 미리 채움 (한 번만)
+  useEffect(() => {
+    if (preset.data && !presetApplied.current) {
+      presetApplied.current = true;
+      const { universityId, name, country } = preset.data;
+      setSchool({ universityId, name, country });
+    }
+  }, [preset.data]);
+
   const [year, setYear] = useState(YEARS[0]);
   const [semester, setSemester] = useState(now.getMonth() >= 7 ? '2' : '1');
+  const term = toSemester(year, semester);
 
   // 귀국보고서: 붙여넣기 → (첫 1회 동의) → 추출 결과 확인·수정 → 저장
   const [phase, setPhase] = useState<'paste' | 'review'>('paste');
@@ -71,19 +105,20 @@ export default function ExperienceNewPage() {
   const [privacyChecked, setPrivacyChecked] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState(false);
+  const [extractError, setExtractError] = useState('');
   const [form, setForm] = useState<ReportForm>(EMPTY_REPORT);
   const [consentOpen, setConsentOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
   const [error, setError] = useState('');
 
-  const [spec, setSpec] = useState<SpecForm>(emptySpec);
+  const [spec, setSpec] = useState<SpecForm | null>(null);
+  const specValue = spec ?? emptySpec(condition);
   const [specTouched, setSpecTouched] = useState(false);
 
   const [credit, setCredit] = useState<CreditForm>(EMPTY_CREDIT);
   const [creditTouched, setCreditTouched] = useState(false);
-  // TODO: 내 귀국보고서 조회 API 연결
-  const reportCourses = school ? getMyReportCourses(school.universityId) : [];
-  const noReport = kind === 'credit' && !!school && reportCourses.length === 0;
+  const reportCourses = school ? reportCoursesOf(mine, school.universityId) : [];
+  const noReport = kind === 'credit' && !!school && !!mine && reportCourses.length === 0;
 
   const dirty =
     !completeOpen &&
@@ -93,18 +128,32 @@ export default function ExperienceNewPage() {
       (kind === 'credit' && creditTouched));
   const blocker = useLeaveConfirm(dirty);
 
-  // TODO: /experiences/check-duplicate 연결
-  const duplicate = school
-    ? findDuplicate(kind, school.universityId, Number(year), Number(semester))
-    : null;
+  // 인정 사례는 과목마다 따로 등록하므로 중복 확인 안 함
+  const checkType: ExperienceType | null =
+    kind === 'report' ? 'RETURN_REPORT' : kind === 'spec' ? specValue.result : null;
+  const { data: check } = useCheckDuplicate(checkType, school?.universityId ?? null, term);
+  const duplicate =
+    check && !check.available && school
+      ? ((kind === 'report'
+          ? mine?.report.find(
+              (e) => e.universityId === school.universityId && `${e.year}-${e.semester}` === term,
+            )
+          : mine?.spec.find(
+              (e) =>
+                e.universityId === school.universityId &&
+                `${e.year}-${e.semester}` === term &&
+                e.result === specValue.result,
+            )) ?? { id: 0 })
+      : null;
 
   const reset = () => {
     setPhase('paste');
     setText('');
     setPrivacyChecked(false);
     setExtracted(false);
+    setExtractError('');
     setForm(EMPTY_REPORT);
-    setSpec(emptySpec());
+    setSpec(null);
     setSpecTouched(false);
     setCredit(EMPTY_CREDIT);
     setCreditTouched(false);
@@ -113,24 +162,50 @@ export default function ExperienceNewPage() {
 
   const runExtract = async () => {
     setExtracting(true);
-    // TODO: /return-reports/extract 연결
-    const result = await extractReport();
-    setForm(result);
-    setExtracted(true);
-    setExtracting(false);
-    setPhase('review');
+    setExtractError('');
+    try {
+      const result = await extractReturnReport(text);
+      setForm(toReportForm(result));
+      setExtracted(true);
+      setPhase('review');
+    } catch (e) {
+      setExtractError(
+        e instanceof ApiError
+          ? e.message
+          : '항목 추출에 실패했습니다. 다시 시도하거나 직접 입력해 주세요.',
+      );
+    } finally {
+      setExtracting(false);
+    }
   };
 
-  const onExtract = () => (hasConsented() ? runExtract() : setConsentOpen(true));
+  const onExtract = () => (profile?.externalAiConsented ? runExtract() : setConsentOpen(true));
+
+  const save = useExperienceMutation(async () => {
+    if (!school) return;
+    const base = { universityId: school.universityId, semester: term };
+    if (kind === 'report') return saveReturnReport({ ...base, ...toReportBody(form) });
+    if (kind === 'credit') return saveCourseCase(toCreditBody(credit));
+    const score = condition.scores.find((s) => s.exam === specValue.exam)?.score ?? null;
+    return saveAdmissionReport({
+      ...base,
+      result: specValue.result,
+      languageTestType: (specValue.exam || null) as LanguageTestType | null,
+      languageScore: specValue.exam ? score : null,
+    });
+  });
 
   const onSave = () => {
     if (!school) return setError('학교를 선택해 주세요');
-    if (kind === 'spec' && MY_CONDITION.scores.length > 0 && !spec.exam)
+    if (kind === 'spec' && condition.scores.length > 0 && !specValue.exam)
       return setError('어학 성적을 골라 주세요');
     if (kind === 'credit' && creditError(credit)) return setError(creditError(credit));
-    // TODO: report → /return-reports (원문 text는 보내지 않음), spec → /admission-reports, credit → /credit-cases
+    if (kind === 'report' && reportFormError(form)) return setError(reportFormError(form));
     setError('');
-    setCompleteOpen(true);
+    save.mutate(undefined, {
+      onSuccess: () => setCompleteOpen(true),
+      onError: (e) => setError(e instanceof ApiError ? e.message : '저장하지 못했어요'),
+    });
   };
 
   const saveRow = (note: string) => (
@@ -139,8 +214,8 @@ export default function ExperienceNewPage() {
       <span className="text-ink-muted text-[16px]">{note}</span>
       <div className="flex-1" />
       {error && <span className="text-danger text-[16px] font-medium">{error}</span>}
-      <Button className="ml-auto" onClick={onSave}>
-        저장
+      <Button className="ml-auto" onClick={onSave} disabled={save.isPending}>
+        {save.isPending ? '저장 중…' : '저장'}
       </Button>
     </div>
   );
@@ -219,7 +294,13 @@ export default function ExperienceNewPage() {
                   variant="secondary"
                   icon="edit"
                   className="self-start"
-                  onClick={() => navigate(PATHS.experienceEdit(kind, duplicate.id))}
+                  onClick={() =>
+                    navigate(
+                      duplicate.id
+                        ? PATHS.experienceEdit(kind, duplicate.id)
+                        : PATHS.experienceMine,
+                    )
+                  }
                 >
                   기존 등록 수정하기
                 </Button>
@@ -228,7 +309,8 @@ export default function ExperienceNewPage() {
               <Card className="flex flex-col gap-7">
                 <StepTitle no={3}>합격 / 탈락 스펙 입력</StepTitle>
                 <SpecFormFields
-                  value={spec}
+                  value={specValue}
+                  condition={condition}
                   onChange={(v) => {
                     setSpec(v);
                     setSpecTouched(true);
@@ -291,6 +373,7 @@ export default function ExperienceNewPage() {
                   extracting={extracting}
                   canExtract={!!school && text.trim().length > 0 && privacyChecked}
                   onExtract={onExtract}
+                  error={extractError}
                   onManual={() => {
                     setExtracted(false);
                     setPhase('review');
@@ -332,11 +415,15 @@ export default function ExperienceNewPage() {
       <ConsentModal
         open={consentOpen}
         onClose={() => setConsentOpen(false)}
-        onAgree={() => {
-          // TODO: /consents 기록
-          saveConsent();
+        onAgree={async () => {
           setConsentOpen(false);
-          runExtract();
+          try {
+            await recordAiConsent();
+            void queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
+            void runExtract();
+          } catch {
+            setExtractError('동의를 기록하지 못했어요. 다시 시도해 주세요.');
+          }
         }}
       />
 

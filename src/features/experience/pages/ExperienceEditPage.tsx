@@ -14,23 +14,33 @@ import ExperienceHeader from '../components/ExperienceHeader';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import ReportFormFields from '../components/ReportFormFields';
 import SpecFormFields from '../components/SpecFormFields';
+import { ApiError } from '@/shared/api/client';
+import {
+  updateAdmissionReport,
+  updateCourseCase,
+  updateReturnReport,
+  useExperienceMutation,
+  useMyExperiences,
+} from '@/shared/api/experiences';
+import { useMyProfile } from '@/shared/api/users';
+import type { LanguageTestType } from '@/shared/types/enums';
 import {
   creditError,
-  getMyCredit,
-  getMyReport,
-  getMySpec,
-  getSchoolOption,
-  MY_CONDITION,
-  updateCredit,
-  updateReport,
-  updateSpec,
+  findMine,
+  reportFormError,
+  toCondition,
+  toCreditBody,
+  toMyExperiences,
+  toReportBody,
+  toSemester,
   type CreditForm,
   type MyCredit,
+  type MyExperiences,
   type MyReport,
   type MySpec,
   type ReportForm,
   type SpecForm,
-} from '../mock';
+} from '../model';
 
 const TITLE: Record<ExperienceKind, string> = {
   report: '귀국보고서',
@@ -43,21 +53,20 @@ const BADGE: Record<ExperienceKind, string> = {
   credit: '학점 인정 결과',
 };
 
-// TODO: /experiences/{kind}/{id} 조회·수정 연결
-const findRecord = (kind: string | undefined, id: number) =>
-  kind === 'spec'
-    ? getMySpec(id)
-    : kind === 'report'
-      ? getMyReport(id)
-      : kind === 'credit'
-        ? getMyCredit(id)
-        : null;
-
 export default function ExperienceEditPage() {
   const navigate = useNavigate();
   const params = useParams();
   const kind = params.kind as ExperienceKind;
-  const record = findRecord(kind, Number(params.id));
+  const { data, isPending } = useMyExperiences();
+  const mine = data && toMyExperiences(data);
+  const record =
+    kind === 'spec' || kind === 'report' || kind === 'credit'
+      ? (findMine(mine, kind, Number(params.id)) as MySpec | MyReport | MyCredit | null)
+      : null;
+
+  if (isPending) {
+    return <p className="text-ink-muted py-16 text-center text-[19px]">불러오는 중이에요</p>;
+  }
 
   if (!record) {
     return (
@@ -86,9 +95,7 @@ export default function ExperienceEditPage() {
       <StaggerItem>
         <div className="rounded-card shadow-card flex flex-wrap items-center gap-3 bg-white px-5 py-4 sm:px-7 sm:py-5">
           <Badge tone="primary">{BADGE[kind]}</Badge>
-          <span className="text-[22px] font-bold">
-            {getSchoolOption(record.universityId)?.name ?? '-'}
-          </span>
+          <span className="text-[22px] font-bold">{record.universityName}</span>
           <span className="bg-line hidden h-5 w-px sm:block" />
           <span className="text-ink-sub text-[19px]">
             {record.year}-{record.semester}학기
@@ -104,7 +111,7 @@ export default function ExperienceEditPage() {
       <StaggerItem>
         {kind === 'spec' && <SpecEdit record={record as MySpec} />}
         {kind === 'report' && <ReportEdit record={record as MyReport} />}
-        {kind === 'credit' && <CreditEdit record={record as MyCredit} />}
+        {kind === 'credit' && <CreditEdit record={record as MyCredit} mine={mine} />}
       </StaggerItem>
     </Stagger>
   );
@@ -133,6 +140,7 @@ function useEditForm<T>(initial: T) {
     setError,
     blocker,
     finish: () => setSaved(true),
+    fail: (e: unknown) => setError(e instanceof ApiError ? e.message : '저장하지 못했어요'),
     cancel: () => navigate(PATHS.experienceMine),
   };
 }
@@ -142,10 +150,12 @@ type EditForm = ReturnType<typeof useEditForm>;
 function EditCard({
   form,
   onSave,
+  saving,
   children,
 }: {
   form: Pick<EditForm, 'error' | 'cancel' | 'blocker'>;
   onSave: () => void;
+  saving?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -156,7 +166,9 @@ function EditCard({
         <Button variant="secondary" onClick={form.cancel}>
           취소
         </Button>
-        <Button onClick={onSave}>저장</Button>
+        <Button onClick={onSave} disabled={saving}>
+          {saving ? '저장 중…' : '저장'}
+        </Button>
       </div>
       <LeaveConfirmModal blocker={form.blocker} />
     </Card>
@@ -165,29 +177,36 @@ function EditCard({
 
 function SpecEdit({ record }: { record: MySpec }) {
   // 등록 당시 학점·전공, 어학은 내 조건에 등록 당시 점수를 합침
+  const { data: profile } = useMyProfile();
+  const mineNow = toCondition(profile);
   const condition = {
     gpa: record.gpa,
     majorType: record.majorType,
     scores: [
-      ...MY_CONDITION.scores.filter((s) => s.exam !== record.exam),
-      { exam: record.exam, score: record.score },
+      ...mineNow.scores.filter((s) => s.exam !== record.exam),
+      ...(record.exam && record.score != null ? [{ exam: record.exam, score: record.score }] : []),
     ],
   };
-  const form = useEditForm<SpecForm>({
-    result: record.result,
-    exam: record.exam,
-    note: record.note,
+  const form = useEditForm<SpecForm>({ result: record.result, exam: record.exam ?? '' });
+  const save = useExperienceMutation(() => {
+    const score = condition.scores.find((s) => s.exam === form.value.exam)?.score ?? null;
+    return updateAdmissionReport(record.id, {
+      universityId: record.universityId,
+      semester: toSemester(record.year, record.semester),
+      result: form.value.result,
+      languageTestType: (form.value.exam || null) as LanguageTestType | null,
+      languageScore: form.value.exam ? score : null,
+    });
   });
 
   const onSave = () => {
-    const score = condition.scores.find((s) => s.exam === form.value.exam)?.score;
-    if (score === undefined) return form.setError('어학 성적을 골라 주세요');
-    updateSpec(record.id, form.value, score);
-    form.finish();
+    if (condition.scores.length > 0 && !form.value.exam)
+      return form.setError('어학 성적을 골라 주세요');
+    save.mutate(undefined, { onSuccess: form.finish, onError: form.fail });
   };
 
   return (
-    <EditCard form={form} onSave={onSave}>
+    <EditCard form={form} onSave={onSave} saving={save.isPending}>
       <SpecFormFields value={form.value} onChange={form.onChange} condition={condition} />
     </EditCard>
   );
@@ -195,39 +214,40 @@ function SpecEdit({ record }: { record: MySpec }) {
 
 function ReportEdit({ record }: { record: MyReport }) {
   const form = useEditForm<ReportForm>(record.form);
+  const save = useExperienceMutation(() => updateReturnReport(record.id, toReportBody(form.value)));
 
   const onSave = () => {
-    updateReport(record.id, form.value);
-    form.finish();
+    const error = reportFormError(form.value);
+    if (error) return form.setError(error);
+    save.mutate(undefined, { onSuccess: form.finish, onError: form.fail });
   };
 
   return (
-    <EditCard form={form} onSave={onSave}>
+    <EditCard form={form} onSave={onSave} saving={save.isPending}>
       <InfoNote>귀국보고서는 원문을 저장하지 않아 항목만 수정할 수 있어요</InfoNote>
       <ReportFormFields value={form.value} onChange={form.onChange} />
     </EditCard>
   );
 }
 
-function CreditEdit({ record }: { record: MyCredit }) {
-  const courses = getMyReport(record.reportId)?.form.courses ?? [];
+function CreditEdit({ record, mine }: { record: MyCredit; mine?: MyExperiences }) {
+  const courses = mine?.report.find((r) => r.id === record.reportId)?.form.courses ?? [];
   const form = useEditForm<CreditForm>({
     courseKey: String(record.courseKey),
     creditType: record.creditType,
     homeCourse: record.homeCourse ?? null,
     credits: String(record.credits),
   });
+  const save = useExperienceMutation(() => updateCourseCase(record.id, toCreditBody(form.value)));
 
   const onSave = () => {
     const error = creditError(form.value);
     if (error) return form.setError(error);
-    const course = courses.find((c) => String(c.key) === form.value.courseKey);
-    updateCredit(record.id, form.value, course?.name ?? record.foreignCourse);
-    form.finish();
+    save.mutate(undefined, { onSuccess: form.finish, onError: form.fail });
   };
 
   return (
-    <EditCard form={form} onSave={onSave}>
+    <EditCard form={form} onSave={onSave} saving={save.isPending}>
       <CreditFormFields value={form.value} onChange={form.onChange} courses={courses} />
     </EditCard>
   );
