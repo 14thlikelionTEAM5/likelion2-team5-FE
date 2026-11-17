@@ -5,7 +5,7 @@ import Icon from '@/shared/ui/Icon';
 type Props<T> = {
   value: T | null;
   onChange: (value: T | null) => void;
-  search: (query: string) => T[];
+  search: (query: string) => T[] | Promise<T[]>;
   getKey: (item: T) => string | number;
   getLabel: (item: T) => string;
   renderOption: (item: T) => ReactNode;
@@ -33,7 +33,31 @@ export default function SearchSelect<T>({
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const results = search(query).slice(0, 8);
+  const [results, setResults] = useState<T[]>([]);
+  const [loading, setLoading] = useState(false);
+  const searchRef = useRef(search);
+  searchRef.current = search;
+
+  // 입력이 멈춘 뒤 검색함 (서버 검색 요청 줄이기)
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const found = await searchRef.current(query);
+        if (alive) setResults(found.slice(0, 8));
+      } catch {
+        if (alive) setResults([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }, 250);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [query, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -124,7 +148,11 @@ export default function SearchSelect<T>({
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className="rounded-control border-line-soft shadow-card absolute top-full right-0 left-0 z-30 mt-2 max-h-72 origin-top overflow-y-auto border bg-white p-1.5"
           >
-            {results.length > 0 ? (
+            {loading && results.length === 0 ? (
+              <li className="text-ink-muted px-3 py-2.5 text-[18px]">검색 중이에요</li>
+            ) : !query.trim() && results.length === 0 ? (
+              <li className="text-ink-muted px-3 py-2.5 text-[18px]">검색어를 입력해 주세요</li>
+            ) : results.length > 0 ? (
               results.map((item, i) => (
                 <li
                   key={getKey(item)}

@@ -6,14 +6,15 @@ import Icon from '@/shared/ui/Icon';
 import Input from '@/shared/ui/Input';
 import Segment from '@/shared/ui/Segment';
 import Select from '@/shared/ui/Select';
+import { searchHomeCourses } from '@/shared/api/homeCourses';
 import {
   isCreditInRange,
   MAX_CREDITS,
   needsHomeCourse,
-  searchHomeCourses,
   type CourseRow,
   type CreditForm,
-} from '../mock';
+  type HomeCourse,
+} from '../model';
 import SearchSelect from './SearchSelect';
 
 const TYPES = (Object.keys(CREDIT_TYPE) as CreditType[]).map((value) => ({
@@ -66,8 +67,8 @@ export default function CreditFormFields({
           value={value.courseKey}
           onChange={(courseKey) => set({ courseKey })}
           options={courses.map((c) => ({
-            value: String(c.key),
-            label: `${c.code} · ${c.name} (${c.credits})`,
+            value: String(c.courseId ?? c.key),
+            label: `${c.code ? `${c.code} · ` : ''}${c.name} (${c.credits}학점)`,
           }))}
         />
         <Hint>귀국보고서에 등록한 수강 교과목에서 선택해요</Hint>
@@ -107,9 +108,12 @@ export default function CreditFormFields({
             <SearchSelect
               value={value.homeCourse}
               onChange={(homeCourse) => set({ homeCourse })}
-              // TODO: 본교 과목 검색 API 연결
-              search={searchHomeCourses}
-              getKey={(c) => c.courseId}
+              search={(q): Promise<HomeCourse[]> | HomeCourse[] =>
+                q.trim() && value.creditType !== 'GENERAL'
+                  ? searchHomeCourses(q, value.creditType)
+                  : []
+              }
+              getKey={(c) => c.homeCourseId}
               getLabel={(c) => `${c.name} (${c.code})`}
               renderOption={(c) => (
                 <>
@@ -117,12 +121,12 @@ export default function CreditFormFields({
                   <span className="text-ink-muted">{c.code}</span>
                 </>
               )}
-              placeholder={homeEnabled ? '과목명 검색' : '교양·자선은 선택하지 않아요'}
+              placeholder={homeEnabled ? '과목명 검색' : '교양은 선택하지 않아요'}
               clearLabel="본교 과목 선택 지우기"
               disabled={!homeEnabled}
             />
           </Field>
-          <Hint>구분이 전필·전선일 때만 검색해 선택해요. 교양·자선이면 비활성돼요.</Hint>
+          <Hint>구분이 전필·전선일 때만 검색해 선택해요. 교양이면 비활성돼요.</Hint>
         </div>
         <div className="flex flex-col gap-2 lg:w-[360px]">
           <Field label="인정 학점">
