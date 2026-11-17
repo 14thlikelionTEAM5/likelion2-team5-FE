@@ -1,3 +1,5 @@
+import { registerAccount, type SignupConditionsInput, type SignupRequest } from '../api/signup';
+import { checkNickname, isValidNickname } from '@/shared/api/users';
 import { ApiError } from '@/shared/api/client';
 import { sendSchoolEmailCode, verifySchoolEmailCode } from '../api/schoolEmail';
 import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes } from 'react';
@@ -35,7 +37,6 @@ const serviceTerms = [
 const steps = ['기본 정보', '메일 인증', '약관 동의', '지원 조건'];
 const controlClass =
   'h-11 w-full min-w-0 rounded-lg border border-[#cdd7e6] bg-white px-3 text-sm placeholder:text-[#687b96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#426682] aria-invalid:border-[#8E5656] aria-invalid:focus-visible:outline-[#8E5656]';
-const nicknamePattern = /^[가-힣a-zA-Z0-9]{2,12}$/;
 
 function focusSignupHeading(heading: HTMLHeadingElement | null) {
   heading?.focus();
@@ -116,7 +117,13 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [checkedNickname, setCheckedNickname] = useState(false);
+  const [nicknameChecked, setNicknameChecked] = useState(false);
+  const [nicknameAvailable, setNicknameAvailable] = useState(false);
+  const [nicknamePending, setNicknamePending] = useState(false);
+  const [nicknameRequestError, setNicknameRequestError] = useState('');
+  const [signupPending, setSignupPending] = useState(false);
+  const [signupError, setSignupError] = useState('');
+  const [verifiedUntil, setVerifiedUntil] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [expiresAt, setExpiresAt] = useState(0);
   const [now, setNow] = useState(0);
@@ -172,8 +179,10 @@ export default function SignupPage() {
     setVerificationError('');
     try {
       const result = await verifySchoolEmailCode(email.trim(), code);
-      if (result?.verified === true) setVerified(true);
-      else setVerificationError('인증번호가 올바르지 않아요');
+      if (result?.verified === true) {
+        setVerifiedUntil(Date.parse(result.verifiedUntil ?? '') || 0);
+        setVerified(true);
+      } else setVerificationError('인증번호가 올바르지 않아요');
     } catch (error) {
       setVerificationError(
         error instanceof ApiError
@@ -195,7 +204,7 @@ export default function SignupPage() {
         : '',
     nickname: !nickname.trim()
       ? '닉네임을 입력해주세요'
-      : nicknamePattern.test(nickname)
+      : isValidNickname(nickname)
         ? ''
         : '한글, 영문, 숫자로 2~12자 입력해주세요',
     password: !password
@@ -213,12 +222,8 @@ export default function SignupPage() {
     major: major ? '' : '전공 구분을 선택해주세요',
   };
   const emailError = submitted ? errors.email : '';
-  const nicknameTaken = checkedNickname && !errors.nickname && nickname === '테스트123';
-  const nicknameError = nicknameTaken
-    ? '이미 사용중인 닉네임이에요'
-    : submitted || checkedNickname
-      ? errors.nickname
-      : '';
+  const nicknameError =
+    nicknameRequestError || (submitted || nicknameChecked ? errors.nickname : '');
   const passwordError = submitted ? errors.password : '';
   const confirmationError = submitted ? errors.confirmation : '';
   const majorError = submitted ? errors.major : '';
@@ -231,7 +236,80 @@ export default function SignupPage() {
       event.currentTarget.querySelector<HTMLElement>('#signup-' + firstInvalid[0])?.focus();
       return;
     }
+    if (nicknamePending) return;
+    if (!nicknameAvailable) {
+      if (!nicknameRequestError) setNicknameRequestError('닉네임 중복확인을 해주세요.');
+      event.currentTarget.querySelector<HTMLInputElement>('#signup-nickname')?.focus();
+      return;
+    }
     setStepIndex(1);
+  }
+
+  async function verifyNicknameAvailability() {
+    setNicknameChecked(true);
+    setNicknameAvailable(false);
+    setNicknameRequestError('');
+    if (errors.nickname || nicknamePending) return;
+    setNicknamePending(true);
+    try {
+      const result = await checkNickname(nickname);
+      if (typeof result?.available !== 'boolean') throw new Error('Invalid nickname response');
+      setNicknameAvailable(result.available);
+      if (!result.available) setNicknameRequestError('이미 사용중인 닉네임이에요');
+    } catch (error) {
+      setNicknameRequestError(
+        error instanceof ApiError
+          ? error.message
+          : '닉네임을 확인하지 못했어요. 다시 시도해주세요.',
+      );
+    } finally {
+      setNicknamePending(false);
+    }
+  }
+
+  function returnToEmailVerification() {
+    setVerified(false);
+    setVerifiedUntil(0);
+    setExpiresAt(0);
+    setResendAt(0);
+    setCode('');
+    setVerificationError('');
+    setSendError('메일 인증이 만료됐어요. 다시 인증해주세요.');
+    setStepIndex(1);
+  }
+
+  async function completeSignup(conditions: SignupConditionsInput) {
+    if (signupPending || !terms || !privacy || !nicknameAvailable || !major) return;
+    if (!verified || (verifiedUntil && Date.now() >= verifiedUntil)) {
+      returnToEmailVerification();
+      return;
+    }
+    setSignupPending(true);
+    setSignupError('');
+    try {
+      const result = await registerAccount({
+        schoolEmail: email.trim(),
+        nickname: nickname.normalize('NFC'),
+        password,
+        majorType: major as SignupRequest['majorType'],
+        consents: { termsOfService: terms, privacyPolicy: privacy },
+        ...conditions,
+      });
+      if (typeof result?.userId !== 'number') throw new Error('Invalid signup response');
+      setPassword('');
+      setConfirmation('');
+      setStepIndex(4);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 403) returnToEmailVerification();
+      else
+        setSignupError(
+          error instanceof ApiError
+            ? error.message
+            : '회원가입을 완료하지 못했어요. 다시 시도해주세요.',
+        );
+    } finally {
+      setSignupPending(false);
+    }
   }
 
   return (
@@ -339,30 +417,34 @@ export default function SignupPage() {
                       placeholder="사용할 닉네임을 입력해주세요."
                       className={controlClass}
                       value={nickname}
+                      readOnly={nicknamePending}
                       onChange={(event) => {
                         setNickname(event.target.value);
-                        setCheckedNickname(false);
+                        setNicknameChecked(false);
+                        setNicknameAvailable(false);
+                        setNicknameRequestError('');
                       }}
                       aria-invalid={!!nicknameError}
                       aria-describedby="signup-nickname-message"
                     />
                     <button
                       type="button"
-                      onClick={() => setCheckedNickname(true)}
+                      onClick={verifyNicknameAvailability}
+                      disabled={nicknamePending}
                       className="h-11 rounded-lg border border-[#cdd7e6] bg-[#eef2f7] px-3 text-sm hover:bg-[#e3eaf3]"
                     >
-                      중복확인
+                      {nicknamePending ? '확인 중…' : '중복확인'}
                     </button>
                   </div>
                   <FieldMessage
                     id="signup-nickname-message"
                     help={
-                      checkedNickname
+                      nicknameAvailable
                         ? '사용가능한 닉네임이에요'
                         : '한글, 영문, 숫자를 조합하여 2~12자 이내로 입력해주세요.'
                     }
                     error={nicknameError}
-                    success={checkedNickname && !nicknameError}
+                    success={nicknameAvailable && !nicknameError}
                   />
                 </div>
 
@@ -686,7 +768,9 @@ export default function SignupPage() {
           <SignupConditions
             active={stepIndex === 3}
             onBack={() => setStepIndex(2)}
-            onComplete={() => setStepIndex(4)}
+            onComplete={completeSignup}
+            pending={signupPending}
+            submitError={signupError}
           />
           {stepIndex === 4 && (
             <section

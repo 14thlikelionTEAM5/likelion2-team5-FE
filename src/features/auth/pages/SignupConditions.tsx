@@ -1,26 +1,30 @@
+import { LANGUAGE_TEST_LABEL, LANGUAGE_TESTS, type LanguageTestType } from '@/shared/types/enums';
+import type { SignupConditionsInput } from '../api/signup';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import SignupStepBadge from './SignupStepBadge';
 
-const tests = ['TOEFL iBT', 'IELTS', 'TOEIC', 'TEPS', 'Duolingo English Test'];
 const fieldClass =
   'h-11 w-full min-w-0 rounded-lg border border-[#cdd7e6] bg-white px-3 text-sm aria-invalid:border-[#8E5656]';
-type Exam = { id: number; test: string; score: string };
+type Exam = { id: number; test: LanguageTestType | ''; score: string };
 
 export default function SignupConditions({
   active,
   onBack,
   onComplete,
+  pending,
+  submitError,
 }: {
   active: boolean;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: (conditions: SignupConditionsInput) => void;
+  pending: boolean;
+  submitError: string;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   const nextExamId = useRef(1);
   const [gpa, setGpa] = useState('');
   const [exams, setExams] = useState<Exam[]>([{ id: 0, test: '', score: '' }]);
   const [submitted, setSubmitted] = useState(false);
-  const [showNotice, setShowNotice] = useState(false);
 
   useEffect(() => {
     if (active) heading.current?.focus();
@@ -43,18 +47,18 @@ export default function SignupConditions({
 
   function updateExam(id: number, change: Partial<Pick<Exam, 'test' | 'score'>>) {
     setExams((current) => current.map((exam) => (exam.id === id ? { ...exam, ...change } : exam)));
-    setShowNotice(false);
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitted(true);
-    if (gpaError || exams.some(examError)) return;
-    if (import.meta.env.DEV) {
-      onComplete();
-      return;
-    }
-    setShowNotice(true);
+    if (pending || gpaError || exams.some(examError)) return;
+    onComplete({
+      gpa: Number(gpa),
+      languageScores: exams.flatMap(({ test, score }) =>
+        test ? [{ testType: test, score: Number(score) }] : [],
+      ),
+    });
   }
 
   if (!active) return null;
@@ -89,13 +93,13 @@ export default function SignupConditions({
           <div className="relative">
             <input
               id="signup-gpa"
+              readOnly={pending}
               required
               inputMode="decimal"
               placeholder="예: 3.82"
               value={gpa}
               onChange={(event) => {
                 setGpa(event.target.value);
-                setShowNotice(false);
               }}
               className={fieldClass + ' pr-16'}
               aria-invalid={submitted && !!gpaError}
@@ -118,6 +122,7 @@ export default function SignupConditions({
         </div>
 
         <fieldset
+          disabled={pending}
           className="min-w-0 py-[clamp(1rem,3dvh,1.5rem)]"
           aria-labelledby="signup-exams-heading"
         >
@@ -152,14 +157,18 @@ export default function SignupConditions({
                     시험 종류
                     <select
                       value={exam.test}
-                      onChange={(event) => updateExam(exam.id, { test: event.target.value })}
+                      onChange={(event) =>
+                        updateExam(exam.id, { test: event.target.value as Exam['test'] })
+                      }
                       className={fieldClass}
                       aria-invalid={!!error && !exam.test}
                       aria-describedby={error ? messageId : undefined}
                     >
                       <option value="">선택 안함</option>
-                      {tests.map((test) => (
-                        <option key={test}>{test}</option>
+                      {LANGUAGE_TESTS.map((test) => (
+                        <option key={test} value={test}>
+                          {LANGUAGE_TEST_LABEL[test]}
+                        </option>
                       ))}
                     </select>
                   </label>
@@ -180,7 +189,6 @@ export default function SignupConditions({
                     aria-label={`시험 ${index + 1} 삭제`}
                     onClick={() => {
                       setExams((current) => current.filter(({ id }) => id !== exam.id));
-                      setShowNotice(false);
                     }}
                     className="size-11 cursor-pointer rounded-lg border border-[#cdd7e6] bg-white text-[#586782]"
                   >
@@ -202,20 +210,22 @@ export default function SignupConditions({
             <button
               type="button"
               onClick={onBack}
+              disabled={pending}
               className="min-h-11 min-w-0 cursor-pointer rounded-xl border border-[#cdd7e6] px-4 text-sm font-semibold sm:min-w-24"
             >
               이전
             </button>
             <button
               type="submit"
+              disabled={pending}
               className="min-h-11 cursor-pointer rounded-xl bg-[#253357] px-5 text-sm font-semibold text-white sm:min-w-44"
             >
-              가입 완료 <span aria-hidden="true">✓</span>
+              {pending ? '가입 처리 중…' : '가입 완료'} <span aria-hidden="true">✓</span>
             </button>
           </div>
-          {showNotice && (
-            <p role="status" className="mt-3 text-sm text-[#586782]">
-              지원 조건 입력을 확인했어요. 회원가입은 API 연결 후 완료할 수 있어요.
+          {submitError && (
+            <p role="alert" className="mt-3 text-sm text-[#8E5656]">
+              {submitError}
             </p>
           )}
         </div>
