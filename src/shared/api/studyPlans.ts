@@ -1,7 +1,101 @@
-// TODO
-// /study-plans                           수강계획 목록, 생성
-// /study-plans/{planId}                  상세, 이름 수정, 삭제
-// /study-plans/{planId}/items            과목 추가
-// /study-plans/{planId}/items/{itemId}   과목 수정, 삭제
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { api } from './client';
 
-export {};
+export type StudyPlanSummary = {
+  studyPlanId: number;
+  universityId: number;
+  universityName: string;
+  name: string;
+  courseCount: number;
+  totalExpectedCredits: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type StudyPlanItem = {
+  itemId: number;
+  itemType: 'DIRECT' | 'REFERENCE';
+  courseName: string;
+  foreignCredit: number | null;
+  sourceCourseId: number | null;
+  homeCourseId: number | null;
+  recognitionType: 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
+  expectedCredit: number | null;
+  creditLimitWarning: boolean;
+};
+
+export type StudyPlanDetail = {
+  studyPlanId: number;
+  name: string;
+  universityId: number;
+  universityName: string;
+  calculation: {
+    status: 'CALCULABLE' | 'NOT_CALCULABLE';
+    rule: 'ECTS_X0_6' | 'AS_IS' | null;
+    reasonCode: string | null;
+  };
+  items: StudyPlanItem[];
+  totalExpectedCredit: number | null;
+  semesterCreditLimit: number | null;
+  semesterCreditLimitWarning: boolean;
+};
+
+export type CreateStudyPlanRequest = {
+  universityId: number;
+  name: string;
+};
+
+export type CreateStudyPlanResponse = {
+  studyPlanId: number;
+};
+
+export type DeleteStudyPlanResponse = {
+  studyPlanId: number;
+};
+
+export const getStudyPlans = () =>
+  api<StudyPlanSummary[]>('/study-plans');
+
+export const getStudyPlanDetail = (studyPlanId: number) =>
+  api<StudyPlanDetail>(`/study-plans/${studyPlanId}`);
+
+export const createStudyPlan = (body: CreateStudyPlanRequest) =>
+  api<CreateStudyPlanResponse>('/study-plans', {
+    method: 'POST',
+    body,
+  });
+
+export const deleteStudyPlan = (studyPlanId: number) =>
+  api<DeleteStudyPlanResponse>(`/study-plans/${studyPlanId}`, {
+    method: 'DELETE',
+  });
+
+export const useStudyPlans = () =>
+  useQuery({ queryKey: ['study-plans'], queryFn: getStudyPlans });
+
+export const useStudyPlanDetail = (studyPlanId: number) =>
+  useQuery({
+    queryKey: ['study-plans', studyPlanId],
+    queryFn: () => getStudyPlanDetail(studyPlanId),
+    enabled: Number.isInteger(studyPlanId) && studyPlanId > 0,
+  });
+
+export const useCreateStudyPlan = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createStudyPlan,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['study-plans'] }),
+  });
+};
+
+export const useDeleteStudyPlan = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteStudyPlan,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['study-plans'] }),
+  });
+};
