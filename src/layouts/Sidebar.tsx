@@ -4,15 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
 import { PATHS } from '@/app/paths';
 import { clearToken } from '@/shared/api/token';
+import { useMyProfile } from '@/shared/api/users';
 import { MAJOR_TYPE_LABEL, type MajorType } from '@/shared/types/enums';
 import Icon, { type IconName } from '@/shared/ui/Icon';
 import logo from '@/assets/decor/logo-passhufs.svg';
 import sidebarBg from '@/assets/decor/sidebar-bg.svg';
 import ddayCardBg from '@/assets/decor/dday-card.svg';
 import { APPLY_SCHEDULE, getDaysLeft } from '@/shared/constants/schedule';
-
-// TODO: useMe() 연결
-const MOCK_USER = { nickname: 'OOO', majorType: 'PRIMARY' as MajorType };
 
 type SubItem = { label: string; to: string; match: (path: string) => boolean };
 type MenuItem = {
@@ -157,15 +155,18 @@ function DdayCard() {
 }
 
 function UserCard({ onLogout }: { onLogout: () => void }) {
+  const { data: profile } = useMyProfile();
+  const nickname = profile?.nickname ?? '';
+  const majorType = profile?.majorType as MajorType | null | undefined;
   return (
     <div className="rounded-panel bg-panel flex w-full flex-col gap-3.5 p-4">
       <div className="flex items-center gap-3">
         <div className="bg-primary flex size-12 items-center justify-center rounded-[20px] text-xl font-bold text-white">
-          {MOCK_USER.nickname.charAt(0)}
+          {nickname.charAt(0)}
         </div>
         <div className="flex flex-col gap-0.5">
-          <p className="text-ink text-xl font-semibold">{MOCK_USER.nickname} 님</p>
-          <p className="text-ink-muted text-base">{MAJOR_TYPE_LABEL[MOCK_USER.majorType]}</p>
+          <p className="text-ink text-xl font-semibold">{nickname} 님</p>
+          <p className="text-ink-muted text-base">{majorType ? MAJOR_TYPE_LABEL[majorType] : ''}</p>
         </div>
       </div>
       <button

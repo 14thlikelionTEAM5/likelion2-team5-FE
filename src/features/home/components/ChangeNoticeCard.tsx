@@ -7,11 +7,13 @@ import CardHeading from './CardHeading';
 import StatBox from './StatBox';
 
 export type AgreementChanges = {
-  baseDate: string;
-  newCount: number;
-  quotaChangedCount: number;
-  closedCount: number;
+  baseDate: string | null;
+  newCount: number | null;
+  quotaChangedCount: number | null;
+  closedCount: number | null;
 };
+
+const count = (n: number | null) => (n != null ? `${n}곳` : '-');
 
 export default function ChangeNoticeCard({ changes }: { changes: AgreementChanges }) {
   const navigate = useNavigate();
@@ -21,12 +23,12 @@ export default function ChangeNoticeCard({ changes }: { changes: AgreementChange
       <CardHeading
         icon="bell"
         title="이번 학기 변경 안내"
-        description={`기준일 ${changes.baseDate.replaceAll('-', '.')}`}
+        description={`기준일 ${changes.baseDate?.replaceAll('-', '.') ?? '-'}`}
       />
       <div className="flex gap-3 xl:flex-1">
-        <StatBox large label="신규 학교" value={`${changes.newCount}곳`} />
-        <StatBox large label="인원 변경" value={`${changes.quotaChangedCount}곳`} />
-        <StatBox large label="모집 중단" value={`${changes.closedCount}곳`} />
+        <StatBox large label="신규 학교" value={count(changes.newCount)} />
+        <StatBox large label="인원 변경" value={count(changes.quotaChangedCount)} />
+        <StatBox large label="모집 중단" value={count(changes.closedCount)} />
       </div>
       <Button
         variant="secondary"
