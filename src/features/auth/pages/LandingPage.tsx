@@ -32,8 +32,8 @@ export default function LandingPage() {
           <p className="muted">꼭 필요한 정보만 입력하고 한눈에 확인해요.</p>
           <div className="cards">
             <article><span className="number" aria-hidden="true">01</span><h3>간편한 조건 입력</h3><p>누적 학점과 보유한 어학 성적만 간단하게 입력해요.</p><footer>✦ 빠른 간소화 입력폼</footer></article>
-            <article><span className="number" aria-hidden="true">02</span><h3>빠른 자격 확인</h3><p>복잡한 지원 조건을 직접 비교할 필요 없이 결과를 확인해요.</p><footer>✦ 실시간 요건 매칭</footer></article>
-            <article><span className="number" aria-hidden="true">03</span><h3>내 정보를 한눈에</h3><p>등록한 학점과 어학 성적을 한 화면에서 확인해요.</p><footer>✦ 원스톱 지원 현황</footer></article>
+            <article><span className="number" aria-hidden="true">02</span><h3>빠른 자격 확인</h3><p>내 조건으로 지원할 수 있는지 바로 확인해요.</p><footer>✦ 실시간 요건 매칭</footer></article>
+            <article><span className="number" aria-hidden="true">03</span><h3>내 정보를 한눈에</h3><p>등록한 학점과 어학 성적을 한 화면에서 함께 확인할 수 있어요.</p><footer>✦ 원스톱 지원 현황</footer></article>
           </div>
         </section>
       </div>

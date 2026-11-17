@@ -114,7 +114,7 @@
 .passhufs-landing .cards { width: min(100%, 58rem); }
 .passhufs-landing .cards article { padding: clamp(1.35rem, 2vw, 1.75rem); }
 .passhufs-landing .cards h3 { font-size: clamp(1.05rem, 1.55vw, 1.25rem); }
-.passhufs-landing .cards p { font-size: .95rem; }
+.passhufs-landing .cards p { font-size: .95rem; word-break: keep-all; overflow-wrap: anywhere; text-wrap: pretty; }
 .passhufs-landing .cards footer { font-size: .85rem; }
 .passhufs-landing .guide { background: #f7f8fa; padding-block: clamp(3.5rem, 6vw, 6rem); }
 .passhufs-landing .guide h2 { font-size: clamp(1.6rem, 2.8vw, 2.5rem); }
