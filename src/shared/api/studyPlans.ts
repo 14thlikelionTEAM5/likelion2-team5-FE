@@ -215,3 +215,24 @@ export const useUpdateStudyPlanItem = () => {
     },
   });
 };
+
+// DELETE - 수강계획 자체 삭제 (연결된 계획 과목은 서버에서 함께 삭제)
+export type DeleteStudyPlanResponse = {
+  studyPlanId: number;
+};
+
+export const deleteStudyPlan = (studyPlanId: number) =>
+  api<DeleteStudyPlanResponse>(`/study-plans/${studyPlanId}`, {
+    method: 'DELETE',
+  });
+
+export const useDeleteStudyPlan = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteStudyPlan,
+    onSuccess: (_response, studyPlanId) => {
+      void queryClient.invalidateQueries({ queryKey: ['study-plans'] });
+      void queryClient.removeQueries({ queryKey: ['study-plans', studyPlanId], exact: true });
+    },
+  });
+};

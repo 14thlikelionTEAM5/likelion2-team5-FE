@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
+import { useCreateStudyPlan, useDeleteStudyPlan } from '@/shared/api/studyPlans';
 
 type StudyPlanSummary = {
   studyPlanId: number;
@@ -31,6 +33,7 @@ type StudyPlanDetail = {
 };
 
 const MAX_PLANS = 5;
+const USE_MOCK = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true';
 const recognitionLabel = {
   MAJOR_REQUIRED: '전필',
   MAJOR_ELECTIVE: '전선',
@@ -49,10 +52,79 @@ export default function PlanListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState('');
   const [notice, setNotice] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createUniversityId, setCreateUniversityId] = useState('');
+  const [createError, setCreateError] = useState('');
+  const createPlan = useCreateStudyPlan();
+  const deletePlan = useDeleteStudyPlan();
+
+  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const universityId = Number(createUniversityId);
+    const name = createName.trim();
+    if (!Number.isSafeInteger(universityId) || universityId <= 0 || !name) {
+      setCreateError('대학 ID는 양의 정수로, 계획 이름은 비워 두지 않고 입력해 주세요.');
+      return;
+    }
+    if (plans.length >= MAX_PLANS) {
+      setCreateError('수강계획은 최대 5개까지 생성할 수 있습니다.');
+      return;
+    }
+    if (plans.some((plan) => plan.universityId === universityId)) {
+      setCreateError('이미 해당 대학의 수강계획이 있습니다.');
+      return;
+    }
+    setCreateError('');
+    if (USE_MOCK) {
+      const now = new Date().toISOString();
+      const mockId = -Date.now();
+      setPlans((previous) => [{
+        studyPlanId: mockId,
+        universityId,
+        universityName: `대학 ID ${universityId} (미리보기)`,
+        name,
+        courseCount: 0,
+        totalExpectedCredits: 0,
+        createdAt: now,
+        updatedAt: now,
+      }, ...previous]);
+      setDetails((previous) => ({ ...previous, [mockId]: {
+        studyPlanId: mockId,
+        name,
+        universityId,
+        universityName: `대학 ID ${universityId} (미리보기)`,
+        items: [],
+      } }));
+      setIsCreateOpen(false);
+      setCreateName('');
+      setCreateUniversityId('');
+      setNotice('개발용 미리보기 계획입니다. 서버에는 저장되지 않으며 새로고침 시 사라집니다.');
+      return;
+    }
+    try {
+      const result = await createPlan.mutateAsync({ universityId, name });
+      setIsCreateOpen(false);
+      setCreateName('');
+      setCreateUniversityId('');
+      setNotice('수강계획이 생성되었습니다.');
+      setReloadKey((key) => key + 1);
+      // 생성 API 응답의 실제 studyPlanId를 사용해 편집 화면으로 이동합니다.
+      navigate(PATHS.planEdit(result.studyPlanId));
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : '수강계획 생성에 실패했습니다.');
+    }
+  };
 
   useEffect(() => {
+    if (USE_MOCK) {
+      setIsLoading(false);
+      setError('');
+      return;
+    }
     let active = true;
     const load = async () => {
       setIsLoading(true);
@@ -87,9 +159,28 @@ export default function PlanListPage() {
     return () => { active = false; };
   }, [reloadKey]);
 
-  const handleDelete = () => {
-    setDeleteTargetId(null);
-    setNotice('실제 삭제 API는 아직 연결되지 않았습니다. 수강계획이 삭제되지 않았습니다.');
+  const handleDelete = async () => {
+    if (deleteTargetId === null || deletePlan.isPending) return;
+    setDeleteError('');
+    if (USE_MOCK) {
+      setPlans((previous) => previous.filter((plan) => plan.studyPlanId !== deleteTargetId));
+      setDetails((previous) => {
+        const next = { ...previous };
+        delete next[deleteTargetId];
+        return next;
+      });
+      setDeleteTargetId(null);
+      setNotice('Mock 계획을 목록에서 제거했습니다. 서버에는 변경사항이 저장되지 않습니다.');
+      return;
+    }
+    try {
+      await deletePlan.mutateAsync(deleteTargetId);
+      setDeleteTargetId(null);
+      setNotice('수강계획이 삭제되었습니다.');
+      setReloadKey((key) => key + 1);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : '수강계획 삭제에 실패했습니다.');
+    }
   };
 
   return (
@@ -108,17 +199,18 @@ export default function PlanListPage() {
       <section className="min-h-[720px] rounded-[24px] bg-white px-5 py-8 sm:px-10 sm:py-12">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <p className="text-[16px] text-ink-muted sm:text-[18px]">
-            수강계획은 최대 5개까지, 학교당 학기별 1개만 만들 수 있음
+            수강계획은 최대 5개까지, 대학별로 1개만 만들 수 있음
           </p>
           <button
             type="button"
-            onClick={() => setNotice('새 계획 생성 API는 아직 연결되지 않았습니다.')}
+            onClick={() => { setCreateError(''); setIsCreateOpen(true); }}
             disabled={plans.length >= MAX_PLANS || isLoading}
             className="min-h-[52px] min-w-[190px] rounded-[10px] bg-primary px-6 text-[18px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[240px]"
           >
             + 새 계획 만들기
           </button>
         </div>
+        {USE_MOCK && <p className="mb-4 text-sm text-caution">개발용 Mock 모드입니다. 생성된 계획은 서버에 저장되지 않습니다.</p>}
         {notice && <p role="status" className="mb-4 text-sm text-ink-sub">{notice}</p>}
 
         {isLoading ? (
@@ -172,8 +264,8 @@ export default function PlanListPage() {
                     <span className="font-normal text-ink-muted"> · 참고용 예상치</span>
                   </p>
                   <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => navigate(PATHS.planEdit(plan.studyPlanId))} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">편집</button>
-                    <button type="button" onClick={() => setDeleteTargetId(plan.studyPlanId)} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">삭제</button>
+                    <button type="button" onClick={() => USE_MOCK ? setNotice('Mock 계획의 편집 기능은 제공하지 않습니다.') : navigate(PATHS.planEdit(plan.studyPlanId))} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">편집</button>
+                    <button type="button" onClick={() => { setDeleteError(''); setDeleteTargetId(plan.studyPlanId); }} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">삭제</button>
                   </div>
                 </div>
               </article>
@@ -183,19 +275,45 @@ export default function PlanListPage() {
         <p className="mt-7 text-sm text-ink-muted">예상 인정 학점은 참고용이며, 최종 학점 인정은 학과 확인이 필요합니다.</p>
       </section>
 
+
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !createPlan.isPending) setIsCreateOpen(false);
+        }}>
+          <form onSubmit={(event) => { void handleCreate(event); }} role="dialog" aria-modal="true" aria-labelledby="create-plan-title" className="w-full max-w-[460px] rounded-[18px] bg-white p-7 shadow-xl">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 id="create-plan-title" className="text-[24px] font-semibold text-ink">새 수강계획 만들기</h2>
+              <button type="button" aria-label="닫기" disabled={createPlan.isPending} onClick={() => setIsCreateOpen(false)} className="text-2xl text-ink-muted">×</button>
+            </div>
+            <p className="mb-5 text-sm text-ink-muted">대학 선택 UI 연동 전이므로 협정교 목록의 실제 대학 ID를 입력해 주세요.</p>
+            <label htmlFor="create-university-id" className="mb-2 block text-sm font-semibold text-ink">대학 ID</label>
+            <input id="create-university-id" type="number" min="1" step="1" required value={createUniversityId} onChange={(event) => setCreateUniversityId(event.target.value)} className="mb-4 w-full rounded-[8px] border border-line px-4 py-3 text-ink" placeholder="예: 1" />
+            <label htmlFor="create-plan-name" className="mb-2 block text-sm font-semibold text-ink">계획 이름</label>
+            <input id="create-plan-name" type="text" required value={createName} onChange={(event) => setCreateName(event.target.value)} className="mb-4 w-full rounded-[8px] border border-line px-4 py-3 text-ink" placeholder="예: 2027-1 교환학생 수강계획" />
+            {USE_MOCK && <p className="mb-4 text-sm text-caution">Mock 모드: 실제 서버에는 저장되지 않습니다.</p>}
+            {createError && <p role="alert" className="mb-4 text-sm text-danger">{createError}</p>}
+            <div className="flex gap-3">
+              <button type="button" disabled={createPlan.isPending} onClick={() => setIsCreateOpen(false)} className="min-h-[48px] flex-1 rounded-[8px] border border-line font-semibold text-ink">취소</button>
+              <button type="submit" disabled={createPlan.isPending} className="min-h-[48px] flex-1 rounded-[8px] bg-primary font-semibold text-white disabled:opacity-50">{createPlan.isPending ? '생성 중...' : '생성'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {deleteTargetId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setDeleteTargetId(null);
+          if (event.target === event.currentTarget && !deletePlan.isPending) setDeleteTargetId(null);
         }}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="delete-plan-title" className="w-full max-w-[416px] rounded-[18px] bg-white p-8 shadow-xl">
             <div className="mb-6 flex items-start justify-between gap-3">
               <h3 id="delete-plan-title" className="text-[24px] font-semibold text-ink">삭제하시겠습니까?</h3>
-              <button type="button" aria-label="닫기" onClick={() => setDeleteTargetId(null)} className="text-2xl text-ink-muted">×</button>
+              <button type="button" aria-label="닫기" disabled={deletePlan.isPending} onClick={() => setDeleteTargetId(null)} className="text-2xl text-ink-muted">×</button>
             </div>
-            <p className="mb-5 text-sm text-ink-muted">삭제 API 연동 전이므로 실제 삭제되지는 않습니다.</p>
+            <p className="mb-5 text-sm text-ink-muted">{USE_MOCK ? "Mock 모드: 목록에서만 제거되며 서버에는 저장되지 않습니다." : "이 계획과 연결된 과목도 함께 삭제되며 되돌릴 수 없습니다."}</p>
+            {deleteError && <p role="alert" className="mb-4 text-sm text-danger">{deleteError}</p>}
             <div className="flex gap-3">
-              <button type="button" onClick={() => setDeleteTargetId(null)} className="min-h-[55px] flex-1 rounded-[8px] border border-line font-semibold text-ink">취소</button>
-              <button type="button" onClick={handleDelete} className="min-h-[55px] flex-1 rounded-[8px] bg-primary font-semibold text-white">확인</button>
+              <button type="button" disabled={deletePlan.isPending} onClick={() => setDeleteTargetId(null)} className="min-h-[55px] flex-1 rounded-[8px] border border-line font-semibold text-ink disabled:opacity-50">취소</button>
+              <button type="button" disabled={deletePlan.isPending} onClick={() => { void handleDelete(); }} className="min-h-[55px] flex-1 rounded-[8px] bg-primary font-semibold text-white disabled:opacity-50">{deletePlan.isPending ? "삭제 중..." : "확인"}</button>
             </div>
           </div>
         </div>
