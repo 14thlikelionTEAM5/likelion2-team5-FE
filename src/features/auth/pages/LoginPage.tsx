@@ -192,7 +192,7 @@ export default function LoginPage() {
             아직 계정이 없으신가요?
             <Link
               to={PATHS.signup}
-              className="ml-2 inline-block font-semibold text-[#365474] hover:underline"
+              className="ml-2 inline-block font-semibold text-[#365474] underline underline-offset-2"
             >
               회원가입
             </Link>
