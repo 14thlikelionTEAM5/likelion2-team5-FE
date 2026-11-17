@@ -135,3 +135,43 @@ export const useRenameStudyPlan = () => {
     },
   });
 };
+
+// POST - 수강계획 과목 추가
+export type AddStudyPlanItemRequest = {
+  itemType: 'REGISTERED' | 'CUSTOM';
+  courseName: string;
+  foreignCredit: number;
+  sourceCourseId: number | null;
+  homeCourseId: number | null;
+  recognitionType: 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL' | null;
+};
+export type AddStudyPlanItemResponse = { itemId: number };
+export const addStudyPlanItem = (studyPlanId: number, body: AddStudyPlanItemRequest) =>
+  api<AddStudyPlanItemResponse>(`/study-plans/${studyPlanId}/items`, { method: 'POST', body });
+export const useAddStudyPlanItem = (studyPlanId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AddStudyPlanItemRequest) => addStudyPlanItem(studyPlanId, body),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['study-plans'] }); },
+  });
+};
+
+// DELETE - 수강계획에 담긴 과목 삭제
+export type DeleteStudyPlanItemResponse = {
+  itemId: number;
+};
+
+export const deleteStudyPlanItem = (studyPlanId: number, itemId: number) =>
+  api<DeleteStudyPlanItemResponse>(`/study-plans/${studyPlanId}/items/${itemId}`, {
+    method: 'DELETE',
+  });
+
+export const useDeleteStudyPlanItem = (studyPlanId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: number) => deleteStudyPlanItem(studyPlanId, itemId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['study-plans'] });
+    },
+  });
+};

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
-import { useAddStudyPlanItem, useRenameStudyPlan } from '@/shared/api/studyPlans';
+import { useAddStudyPlanItem, useDeleteStudyPlanItem, useRenameStudyPlan } from '@/shared/api/studyPlans';
 
 type RecognitionType = 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
 type PlanItem = {
@@ -45,7 +45,6 @@ export default function PlanEditPage() {
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [demoItems, setDemoItems] = useState<DemoItem[]>([]);
-  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
   const [courseName, setCourseName] = useState('');
   const [foreignCredits, setForeignCredits] = useState('');
   const [recognitionType, setRecognitionType] = useState<RecognitionType>('MAJOR_ELECTIVE');
@@ -55,6 +54,8 @@ export default function PlanEditPage() {
   const [renameMessage, setRenameMessage] = useState('');
   const renameMutation = useRenameStudyPlan();
   const addItemMutation = useAddStudyPlanItem(Number(planId));
+  const deleteItemMutation = useDeleteStudyPlanItem(Number(planId));
+  const [deletingItemId, setDeletingItemId] = useState<number | null>(null);
   const isMock = import.meta.env.VITE_USE_MOCK === 'true';
 
   useEffect(() => {
@@ -66,7 +67,6 @@ export default function PlanEditPage() {
       setPlanName('');
       setRenameMessage('');
       setDemoItems([]);
-      setHiddenIds([]);
       if (!planId || !/^[1-9]\d*$/.test(planId)) {
         setError('유효한 수강계획 ID가 아닙니다.');
         setIsLoading(false);
@@ -125,7 +125,33 @@ export default function PlanEditPage() {
     }
   };
 
-  const visibleItems = plan?.items.filter((item) => !hiddenIds.includes(item.itemId)) ?? [];
+  const visibleItems = plan?.items ?? [];
+  const handleDeleteCourse = async (itemId: number) => {
+    if (!plan || deleteItemMutation.isPending) return;
+    setMessage('');
+    if (isMock) {
+      setPlan((current) => current ? {
+        ...current,
+        items: current.items.filter((item) => item.itemId !== itemId),
+      } : current);
+      setMessage('Mock 모드: 화면에서만 과목을 삭제했습니다. 서버에는 반영되지 않습니다.');
+      return;
+    }
+    setDeletingItemId(itemId);
+    try {
+      await deleteItemMutation.mutateAsync(itemId);
+      setPlan((current) => current ? {
+        ...current,
+        items: current.items.filter((item) => item.itemId !== itemId),
+      } : current);
+      // 삭제 후 서버에서 학점 합계와 경고도 다시 조회함.
+      setReloadKey((key) => key + 1);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : '과목 삭제에 실패했습니다.');
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
   const handleAddCourse = async () => {
     if (!plan || addItemMutation.isPending) return;
     const credits = Number(foreignCredits);
@@ -237,7 +263,7 @@ export default function PlanEditPage() {
                     <td className="px-3 py-4">{item.expectedCredit ?? '-'}{item.creditLimitWarning && <span className="ml-2 text-danger">한도 초과</span>}</td>
                     <td className="px-3 py-4">{LABELS[item.recognitionType] ?? '확인 필요'}</td>
                     <td className="break-words px-3 py-4">{item.homeCourseId === null ? '-' : `본교 과목 ID ${item.homeCourseId}`}</td>
-                    <td className="px-2 py-3"><button type="button" className={outlineButtonClass} onClick={() => { setHiddenIds((prev) => [...prev, item.itemId]); setMessage('화면에서만 숨겼습니다. 서버 과목은 삭제되지 않았습니다.'); }}>삭제</button></td>
+                    <td className="px-2 py-3"><button type="button" className={`${outlineButtonClass} disabled:cursor-not-allowed disabled:opacity-50`} disabled={deleteItemMutation.isPending} onClick={() => void handleDeleteCourse(item.itemId)}>{deletingItemId === item.itemId ? '삭제 중...' : '삭제'}</button></td>
                   </tr>)}
                   {demoItems.map((item) => <tr key={item.id} className="border-b border-line">
                     <td className="break-words px-3 py-4">{item.name} <span className="text-xs text-ink-muted">(임시)</span></td>
@@ -248,7 +274,6 @@ export default function PlanEditPage() {
                 </tbody>
               </table>
             </div>
-            {hiddenIds.length > 0 && <button type="button" className={`mt-4 ${outlineButtonClass}`} onClick={() => setHiddenIds([])}>임시 삭제 취소</button>}
           </section>
 
           <section className="mb-6 rounded-[18px] border border-line bg-white px-5 py-7">
@@ -274,7 +299,7 @@ export default function PlanEditPage() {
             <p className="text-[17px] text-ink-muted">참고용 예상치입니다. 최종 인정 학점은 소속 학과 확인이 필요합니다.</p>
           </section>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-ink-muted">화면상 과목 삭제와 아래 저장 버튼은 아직 서버에 반영되지 않습니다.</p>
+            <p className="text-sm text-ink-muted">아래 저장 버튼은 아직 서버에 연결되지 않았습니다. 과목 추가·삭제는 각각의 버튼에서 처리됩니다.</p>
             <button type="button" onClick={() => setMessage('저장 API가 연결되지 않았습니다. 현재 변경사항은 서버에 저장되지 않습니다.')} className="min-h-[49px] min-w-[140px] rounded-[10px] bg-primary px-6 text-[17px] font-semibold text-white hover:opacity-90">저장</button>
           </div>
         </>}
