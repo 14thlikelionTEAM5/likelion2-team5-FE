@@ -1,9 +1,34 @@
-import { useEffect, useState, type FormEvent, type InputHTMLAttributes } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes } from 'react';
 import { Link } from 'react-router';
 import { PATHS } from '@/app/paths';
 import { MAJOR_TYPE_LABEL } from '@/shared/types/enums';
+import SignupConditions from './SignupConditions';
 import logo from './landing-logo.svg';
 import background from './landing-background.png';
+import SignupStepBadge from './SignupStepBadge';
+
+const serviceTerms = [
+  [
+    '제 1 조 (목적)',
+    '본 약관은 PassHUFS(이하 서비스)가 제공하는 대학생 특화 회원 서비스의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.',
+  ],
+  [
+    '제 2 조 (용어의 정의)',
+    '회원이란 한국외국어대학교(@hufs.ac.kr) 웹메일 인증을 완료하고 본 약관에 동의하여 계정을 생성한 자를 말합니다. 인증 정보란 학번, 웹메일 주소 등 본인 확인 및 재학 증명을 위해 입력된 정보를 의미합니다.',
+  ],
+  [
+    '제 3 조 (회원가입 및 인증 의무)',
+    '이용자는 회사가 요청하는 교내 공식 메일 계정 인증을 필수적으로 통과해야 하며, 타인의 학적 정보나 도용된 이메일을 사용할 경우 사전 통보 없이 계정이 정지 및 삭제될 수 있습니다.',
+  ],
+  [
+    '제 4 조 (이용자의 의무 및 제재)',
+    '회원은 교내 건전한 커뮤니티 질서를 준수해야 하며, 부적절한 광고, 명예훼손, 학내 분란 조장 게시물 게시 시 이용약관에 의거하여 이용권한이 제한됩니다.',
+  ],
+  [
+    '제 5 조 (면책조항)',
+    '회사는 천재지변, 교내 네트워크 장애 또는 이용자의 귀책사유로 인한 서비스 이용 장애에 대하여 책임을 지지 않습니다.',
+  ],
+];
 
 const steps = ['기본 정보', '메일 인증', '약관 동의', '지원 조건'];
 const controlClass =
@@ -25,13 +50,29 @@ function FieldLabel({ id, children }: { id: string; children: string }) {
   );
 }
 
-function FieldMessage({ id, help, error }: { id: string; help?: string; error?: string }) {
+function FieldMessage({
+  id,
+  help,
+  error,
+  success,
+}: {
+  id: string;
+  help?: string;
+  error?: string;
+  success?: boolean;
+}) {
   if (!help && !error) return null;
   return (
     <p
       id={id}
       role={error ? 'alert' : undefined}
-      className={error ? 'text-xs text-[#8E5656]' : 'text-xs text-[#586782]'}
+      className={
+        error
+          ? 'text-xs text-[#8E5656]'
+          : success
+            ? 'text-xs text-[#00839A]'
+            : 'text-xs text-[#586782]'
+      }
     >
       {error || help}
     </p>
@@ -78,19 +119,27 @@ export default function SignupPage() {
   const [expiresAt, setExpiresAt] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [code, setCode] = useState('');
-  const [verificationMessage, setVerificationMessage] = useState('');
+  const [verificationError, setVerificationError] = useState('');
+
+  const [verified, setVerified] = useState(false);
+  const [terms, setTerms] = useState(false);
+  const [privacy, setPrivacy] = useState(false);
+  const termsDialog = useRef<HTMLDialogElement>(null);
+  const [documentTitle, setDocumentTitle] = useState('서비스 이용약관');
+  const allAgreed = terms && privacy;
 
   useEffect(() => {
-    if (!expiresAt) return;
+    if (!expiresAt || verified) return;
     const timer = window.setInterval(() => {
       setSecondsLeft(Math.max(0, Math.min(300, Math.ceil((expiresAt - Date.now()) / 1000))));
     }, 250);
     return () => window.clearInterval(timer);
-  }, [expiresAt]);
+  }, [expiresAt, verified]);
 
   function previewEmailSent() {
+    setVerified(false);
     setCode('');
-    setVerificationMessage('');
+    setVerificationError('');
     setSecondsLeft(300);
     setExpiresAt(Date.now() + 300_000);
   }
@@ -123,7 +172,12 @@ export default function SignupPage() {
     major: major ? '' : '전공 구분을 선택해주세요',
   };
   const emailError = submitted ? errors.email : '';
-  const nicknameError = submitted || checkedNickname ? errors.nickname : '';
+  const nicknameTaken = checkedNickname && !errors.nickname && nickname === '테스트123';
+  const nicknameError = nicknameTaken
+    ? '이미 사용중인 닉네임이에요'
+    : submitted || checkedNickname
+      ? errors.nickname
+      : '';
   const passwordError = submitted ? errors.password : '';
   const confirmationError = submitted ? errors.confirmation : '';
   const majorError = submitted ? errors.major : '';
@@ -146,12 +200,8 @@ export default function SignupPage() {
           <img src={logo} alt="" className="block h-auto w-[clamp(7rem,11vw,9rem)]" />
         </Link>
       </header>
-      <main className="relative isolate min-h-[calc(100dvh-3.5rem)] px-4 py-8">
-        <div
-          className={
-            stepIndex === 1 ? 'flex min-h-[calc(100dvh-7.5rem)] flex-col justify-center' : undefined
-          }
-        >
+      <main className="relative isolate grid min-h-[calc(100dvh-3.5rem)] px-[clamp(1rem,4vw,3rem)] py-[clamp(1rem,4dvh,2.5rem)]">
+        <div className={stepIndex === 4 ? 'min-w-0 self-center' : 'min-w-0 self-start'}>
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-top bg-no-repeat"
@@ -159,45 +209,45 @@ export default function SignupPage() {
               backgroundImage: `url(${background})`,
             }}
           />
-          <ol
-            aria-label="회원가입 단계"
-            className="mx-auto mb-8 grid w-full max-w-[520px] grid-cols-4 py-2"
-          >
-            {steps.map((step, index) => (
-              <li
-                key={step}
-                aria-current={index === stepIndex ? 'step' : undefined}
-                className="relative flex flex-col items-center gap-2 text-center text-xs text-[#94A3B8]"
-              >
-                {index < steps.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-3.5 left-1/2 h-px w-full"
-                    style={{ backgroundColor: index < stepIndex ? '#253357' : '#E2E8F0' }}
-                  />
-                )}
-                <span
-                  className={`relative grid size-7 place-items-center rounded-full border font-semibold ${index <= stepIndex ? 'border-[#253357] bg-[#253357] text-white' : 'border-[#E2E8F0] bg-[#E2E8F0] text-[#64748B]'}`}
+          {stepIndex < 4 && (
+            <ol
+              aria-label="회원가입 단계"
+              className="mx-auto mb-[clamp(1rem,3dvh,2rem)] grid w-full max-w-xl grid-cols-4 py-2"
+            >
+              {steps.map((step, index) => (
+                <li
+                  key={step}
+                  aria-current={index === stepIndex ? 'step' : undefined}
+                  className="relative flex flex-col items-center gap-2 text-center text-[13px] text-[#94A3B8]"
                 >
-                  {index < stepIndex ? '✓' : index + 1}
-                </span>
-                <span className={index === stepIndex ? 'text-[#253357]' : undefined}>{step}</span>
-              </li>
-            ))}
-          </ol>
+                  {index < steps.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-4 left-1/2 h-px w-full"
+                      style={{ backgroundColor: index < stepIndex ? '#253357' : '#E2E8F0' }}
+                    />
+                  )}
+                  <span
+                    className={`relative grid size-8 place-items-center rounded-full border text-sm font-semibold ${index <= stepIndex ? 'border-[#253357] bg-[#253357] text-white' : 'border-2 border-[#CBD5E1] bg-white text-[#64748B]'}`}
+                  >
+                    {index < stepIndex ? '✓' : index + 1}
+                  </span>
+                  <span className={index === stepIndex ? 'text-[#253357]' : undefined}>{step}</span>
+                </li>
+              ))}
+            </ol>
+          )}
 
           {stepIndex === 0 ? (
             <section
               aria-labelledby="signup-heading"
-              className="mx-auto w-full max-w-[520px] rounded-[14px] border border-[#e4e9f1] bg-white p-5 shadow-sm sm:p-9"
+              className="mx-auto w-full max-w-xl rounded-[14px] border border-[#e4e9f1] bg-white p-[clamp(1rem,3vw,2.25rem)] shadow-sm"
             >
-              <span className="inline-flex items-center rounded bg-[#eef2f7] px-2 py-1 text-xs font-semibold text-[#253357]">
-                1/4
-              </span>
+              <SignupStepBadge step={1} />
               <h1
                 id="signup-heading"
                 tabIndex={-1}
-                className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl"
+                className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl"
               >
                 기본 정보를 입력해주세요
               </h1>
@@ -257,10 +307,11 @@ export default function SignupPage() {
                     id="signup-nickname-message"
                     help={
                       checkedNickname
-                        ? '닉네임 중복 확인은 준비 중이에요.'
+                        ? '사용가능한 닉네임이에요'
                         : '한글, 영문, 숫자를 조합하여 2~12자 이내로 입력해주세요.'
                     }
                     error={nicknameError}
+                    success={checkedNickname && !nicknameError}
                   />
                 </div>
 
@@ -309,14 +360,14 @@ export default function SignupPage() {
                       aria-invalid={!!majorError}
                       aria-describedby={majorError ? 'signup-major-message' : undefined}
                       required
-                      className={controlClass}
+                      className={controlClass + ' appearance-none pr-12'}
                     >
                       <option value="" disabled>
                         전공 구분을 선택해주세요
                       </option>
                       {Object.entries(MAJOR_TYPE_LABEL).map(([value, label]) => (
                         <option key={value} value={value}>
-                          {label}
+                          {value === 'PRIMARY' ? '본전공' : label}
                         </option>
                       ))}
                     </select>
@@ -346,17 +397,17 @@ export default function SignupPage() {
                 </button>
               </form>
             </section>
-          ) : (
+          ) : stepIndex === 1 ? (
             <section
               aria-labelledby="verification-heading"
-              className="mx-auto w-full max-w-[520px] rounded-[14px] border border-[#e4e9f1] bg-white p-5 shadow-sm sm:p-9"
+              className="mx-auto w-full max-w-xl rounded-[14px] border border-[#e4e9f1] bg-white p-[clamp(1rem,3vw,2.25rem)] shadow-sm"
             >
-              <p className="text-sm font-semibold text-[#253357]">2/4</p>
+              <SignupStepBadge step={2} />
               <h1
                 id="verification-heading"
                 tabIndex={-1}
                 ref={focusSignupHeading}
-                className="mt-1 text-xl font-semibold tracking-tight outline-none sm:text-2xl"
+                className="mt-2 text-xl font-semibold tracking-tight outline-none sm:text-2xl"
               >
                 학교 메일을 인증해주세요
               </h1>
@@ -369,9 +420,9 @@ export default function SignupPage() {
                 <div className="mt-4 grid gap-3">
                   <p
                     role="status"
-                    className="rounded-lg border border-[#cfe0d4] bg-[#eff6f1] p-3 text-xs text-[#345c43]"
+                    className="rounded-lg border border-[#D9EDF1] bg-[#D9EDF1] p-3 text-xs text-[#00839A]"
                   >
-                    인증번호 발송 화면 미리보기예요.
+                    인증번호를 발송했어요. 메일을 확인해주세요.
                   </p>
                   <div className="grid gap-2">
                     <label htmlFor="signup-code" className="text-sm font-medium">
@@ -381,6 +432,10 @@ export default function SignupPage() {
                       <div className="relative">
                         <input
                           id="signup-code"
+                          type={verified ? 'password' : 'text'}
+                          readOnly={verified}
+                          aria-invalid={!!verificationError}
+                          aria-describedby={verificationError ? 'signup-code-error' : undefined}
                           inputMode="numeric"
                           autoComplete="one-time-code"
                           placeholder="인증번호 6자리"
@@ -388,7 +443,7 @@ export default function SignupPage() {
                           value={code}
                           onChange={(event) => {
                             setCode(event.target.value.replace(/[^0-9]/g, '').slice(0, 6));
-                            setVerificationMessage('');
+                            setVerificationError('');
                           }}
                         />
                         <span
@@ -401,28 +456,54 @@ export default function SignupPage() {
                       </div>
                       <button
                         type="button"
-                        disabled={code.length !== 6 || !secondsLeft}
-                        onClick={() => setVerificationMessage('인증번호 확인은 준비 중이에요.')}
+                        disabled={verified || code.length !== 6 || !secondsLeft}
+                        onClick={() => {
+                          if (Date.now() >= expiresAt) return;
+                          if (import.meta.env.DEV && code === '123456') {
+                            setVerified(true);
+                            setVerificationError('');
+                            return;
+                          }
+                          setVerificationError('인증번호가 올바르지 않아요');
+                        }}
                         className="rounded-lg border border-[#cdd7e6] px-3 text-sm disabled:opacity-50"
                       >
                         인증 확인
                       </button>
                     </div>
+                    {verificationError && (
+                      <p
+                        id="signup-code-error"
+                        role="alert"
+                        className="flex items-start gap-1.5 text-xs text-[#8E5656]"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="grid size-3.5 shrink-0 place-items-center rounded-full bg-[#8E5656] text-[10px] leading-none text-white"
+                        >
+                          !
+                        </span>
+                        {verificationError}
+                      </p>
+                    )}
                   </div>
-                  {!secondsLeft && (
-                    <p role="status" className="text-xs text-[#8E5656]">
-                      인증 시간이 만료됐어요. 메일을 다시 발송해주세요.
+                  {verified && (
+                    <p
+                      role="status"
+                      className="rounded-lg border border-[#D9EDF1] bg-[#D9EDF1] p-3 text-xs text-[#00839A]"
+                    >
+                      ✓ 메일 인증이 완료됐어요.
                     </p>
                   )}
-                  {verificationMessage && (
-                    <p role="status" className="text-xs text-[#586782]">
-                      {verificationMessage}
+                  {!verified && !secondsLeft && (
+                    <p role="status" className="text-xs text-[#8E5656]">
+                      인증 시간이 만료됐어요. 메일을 다시 발송해주세요.
                     </p>
                   )}
                   <button
                     type="button"
                     onClick={previewEmailSent}
-                    className="justify-self-start text-sm text-[#253357] hover:underline"
+                    className="cursor-pointer justify-self-start text-sm text-[#253357] underline underline-offset-2"
                   >
                     인증 메일 재발송
                   </button>
@@ -440,6 +521,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => {
+                    setVerified(false);
                     setExpiresAt(0);
                     setStepIndex(0);
                   }}
@@ -449,15 +531,229 @@ export default function SignupPage() {
                 </button>
                 <button
                   type="button"
-                  disabled
-                  className="min-h-11 rounded-xl bg-[#E2E8F0] px-3 text-sm font-semibold text-[#8291a7]"
+                  disabled={!verified}
+                  onClick={() => {
+                    setStepIndex(2);
+                  }}
+                  className="min-h-11 rounded-xl bg-[#253357] px-3 text-sm font-semibold text-white disabled:bg-[#E2E8F0] disabled:text-[#8291a7]"
+                >
+                  다음
+                </button>
+              </div>{' '}
+            </section>
+          ) : stepIndex === 2 ? (
+            <section
+              aria-labelledby="terms-heading"
+              className="mx-auto w-full max-w-xl rounded-[14px] border border-[#e4e9f1] bg-white p-[clamp(1rem,3vw,2.25rem)] shadow-sm"
+            >
+              <SignupStepBadge step={3} />
+              <h1
+                id="terms-heading"
+                tabIndex={-1}
+                ref={focusSignupHeading}
+                className="mt-2 text-xl font-semibold tracking-tight outline-none sm:text-2xl"
+              >
+                약관에 동의해주세요
+              </h1>
+              <p className="mt-1 text-sm text-[#586782]">
+                서비스 이용을 위해 필수 약관을 확인해주세요
+              </p>
+              <fieldset aria-label="필수 약관" className="mt-6 grid gap-3">
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#e4e9f1] bg-[#eef2f7] p-4">
+                  <input
+                    type="checkbox"
+                    checked={allAgreed}
+                    onChange={(event) => {
+                      setTerms(event.target.checked);
+                      setPrivacy(event.target.checked);
+                    }}
+                    className="mt-0.5 size-5 shrink-0 accent-[#253357]"
+                  />
+                  <span className="grid gap-1 text-sm font-semibold">
+                    전체 동의{' '}
+                    <span className="text-xs font-normal text-[#586782]">
+                      아래 필수 약관에 모두 동의합니다.
+                    </span>
+                  </span>
+                </label>
+                <div className="divide-y divide-[#edf0f5] rounded-xl border border-[#e4e9f1]">
+                  {[
+                    { title: '서비스 이용약관', checked: terms, setChecked: setTerms },
+                    { title: '개인정보 수집·이용 동의', checked: privacy, setChecked: setPrivacy },
+                  ].map(({ title, checked, setChecked }) => (
+                    <div
+                      key={title}
+                      className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
+                    >
+                      <label className="flex min-w-0 cursor-pointer items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) => {
+                            setChecked(event.target.checked);
+                          }}
+                          className="size-4 shrink-0 accent-[#253357]"
+                        />
+                        <span>
+                          {title} <span className="text-[#365474]">(필수)</span>
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        aria-label={title + ' 전문 보기'}
+                        onClick={() => {
+                          setDocumentTitle(title);
+                          termsDialog.current?.showModal();
+                        }}
+                        className="cursor-pointer text-xs text-[#586782] underline underline-offset-2"
+                      >
+                        전문 보기
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStepIndex(1)}
+                  className="min-h-11 rounded-xl border border-[#cdd7e6] px-3 text-sm font-semibold hover:bg-[#f6f8fb]"
+                >
+                  이전
+                </button>
+                <button
+                  type="button"
+                  disabled={!allAgreed}
+                  onClick={() => setStepIndex(3)}
+                  className="min-h-11 rounded-xl bg-[#253357] px-3 text-sm font-semibold text-white disabled:bg-[#E2E8F0] disabled:text-[#8291a7]"
                 >
                   다음
                 </button>
               </div>
             </section>
+          ) : null}
+          <SignupConditions
+            active={stepIndex === 3}
+            onBack={() => setStepIndex(2)}
+            onComplete={() => setStepIndex(4)}
+          />
+          {stepIndex === 4 && (
+            <section
+              aria-labelledby="signup-complete-heading"
+              className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[14px] border border-[#e4e9f1] bg-white px-[clamp(1rem,3vw,2rem)] py-[clamp(1.5rem,5dvh,2.5rem)] text-center shadow-sm"
+            >
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#253357] via-[#577B8D] to-[#253357]"
+              />
+              <div
+                aria-hidden="true"
+                className="mx-auto grid size-16 place-items-center rounded-full border-2 border-[#D9E5F8] bg-[#eef3fb]"
+              >
+                <span className="grid size-10 place-items-center rounded-full bg-[#253357] text-xl text-white">
+                  ✓
+                </span>
+              </div>
+              <h1
+                id="signup-complete-heading"
+                tabIndex={-1}
+                ref={focusSignupHeading}
+                className="mt-5 text-xl font-semibold tracking-tight outline-none"
+              >
+                회원가입이 완료되었습니다!
+              </h1>
+              <p className="mt-3 text-sm leading-relaxed text-[#586782]">
+                <strong className="text-[#253357]">PassHUFS</strong>에 오신 것을 환영해요.
+                <br />
+                이제 나의 이중전공 지원 자격을 확인해보세요.
+              </p>
+              <Link
+                to={PATHS.login}
+                className="mt-6 flex min-h-11 w-full items-center justify-center rounded-lg bg-[#253357] px-4 text-sm font-semibold text-white hover:bg-[#304367]"
+              >
+                로그인하러 가기
+              </Link>
+            </section>
           )}
         </div>
+        <dialog
+          ref={termsDialog}
+          aria-labelledby="signup-document-title"
+          className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[440px] overflow-hidden rounded-xl border border-[#e4e9f1] bg-white text-[#161d30] shadow-xl backdrop:bg-[#161d30]/65"
+        >
+          <div className="flex max-h-[calc(100dvh-2.25rem)] flex-col">
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#e4e9f1] bg-[#f8fafc] px-4 py-2">
+              <h2 id="signup-document-title" className="text-sm font-medium">
+                <span aria-hidden="true" className="mr-2 text-[#64748B]">
+                  ●
+                </span>
+                {documentTitle}
+              </h2>
+              <button
+                type="button"
+                aria-label="닫기"
+                onClick={() => termsDialog.current?.close()}
+                className="grid size-8 cursor-pointer place-items-center rounded text-[#586782] hover:bg-[#e4e9f1]"
+              >
+                ×
+              </button>
+            </header>
+            <div className="min-h-0 space-y-4 overflow-y-auto p-4 text-xs leading-relaxed text-[#586782]">
+              {documentTitle === '서비스 이용약관' ? (
+                <>
+                  <p className="rounded-lg border border-[#e4e9f1] bg-[#f1f5f8] p-3 text-[#253357]">
+                    본 약관은 한국외국어대학교 재학생 및 졸업생 전용 커뮤니티 및 인증 서비스
+                    PassHUFS의 기본 이용 조건과 절차를 규정합니다.
+                  </p>
+                  {serviceTerms.map(([title, body]) => (
+                    <section key={title}>
+                      <h3 className="mb-1 font-semibold text-[#161d30]">{title}</h3>
+                      <p>{body}</p>
+                    </section>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <p className="rounded-lg border border-[#e4e9f1] bg-[#f1f5f8] p-3 text-[#253357]">
+                    PassHUFS는 학교 이메일 인증과 회원 서비스 제공을 위해 아래와 같이 개인정보를
+                    수집·이용합니다.
+                  </p>
+                  <section>
+                    <h3 className="mb-1 font-semibold text-[#161d30]">수집 항목</h3>
+                    <p>학교 이메일 주소, 닉네임, 비밀번호, 전공 구분</p>
+                  </section>
+                  <section>
+                    <h3 className="mb-1 font-semibold text-[#161d30]">수집·이용 목적</h3>
+                    <p>
+                      학교 이메일 인증, 회원 계정 생성과 로그인, 서비스 내 활동에 사용할 닉네임
+                      표시, 전공 구분에 따른 지원 조건 안내
+                    </p>
+                  </section>
+                  <section>
+                    <h3 className="mb-1 font-semibold text-[#161d30]">보유·이용 기간</h3>
+                    <p>
+                      회원 탈퇴 시까지 보유·이용하며, 탈퇴 후에는 지체 없이 파기합니다. 관계 법령에
+                      따라 보존할 의무가 있는 정보는 해당 법령에서 정한 기간 동안 보관한 후
+                      파기합니다.
+                    </p>
+                  </section>
+                  <section>
+                    <h3 className="mb-1 font-semibold text-[#161d30]">동의 거부권 및 불이익</h3>
+                    <p>
+                      개인정보 수집·이용에 동의하지 않을 수 있습니다. 필수 항목의 수집·이용에
+                      동의하지 않으면 회원가입을 진행할 수 없습니다.
+                    </p>
+                  </section>
+                </>
+              )}
+            </div>
+            <form method="dialog" className="shrink-0 border-t border-[#e4e9f1] bg-[#f8fafc] p-4">
+              <button className="min-h-10 w-full cursor-pointer rounded-lg bg-[#253357] text-sm font-semibold text-white">
+                확인
+              </button>
+            </form>
+          </div>
+        </dialog>
       </main>
     </div>
   );
