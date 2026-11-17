@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { PATHS } from '@/app/paths';
+import { addStudyPlanItem, createStudyPlan, useStudyPlanDetail } from '@/shared/api/studyPlans';
 import { MAJOR_TYPE_LABEL } from '@/shared/types/enums';
 import Badge from '@/shared/ui/Badge';
 import Button from '@/shared/ui/Button';
@@ -11,35 +12,55 @@ import Icon from '@/shared/ui/Icon';
 import InfoNote from '@/shared/ui/InfoNote';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Table from '@/shared/ui/Table';
-import type { Course, CourseCase, CreditType } from '../mock';
+import type { Course, CourseCase, CreditType } from '../types';
 
-// TODO: 구분 값은 BE 명세 확인
 export const CREDIT_TYPE = {
   MAJOR_REQUIRED: { tone: 'caution', label: '전필' },
   MAJOR_ELECTIVE: { tone: 'primary', label: '전선' },
   GENERAL: { tone: 'accent', label: '교양' },
-  FREE_ELECTIVE: { tone: 'neutral', label: '자선' },
 } as const satisfies Record<CreditType, object>;
 
-function SampleTag() {
-  return (
-    <span className="border-line text-ink-muted shrink-0 rounded-[6px] border bg-white px-1.5 text-[13px] font-medium">
-      시연용 샘플
-    </span>
-  );
+const DEFAULT_PLAN_NAME = '교환학생 수강계획';
+
+// 수강계획이 없으면 먼저 만들고 과목을 담음
+function useAddToPlan(universityId: number, studyPlanId: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (course: Course) => {
+      const planId =
+        studyPlanId ??
+        (await createStudyPlan({ universityId, name: DEFAULT_PLAN_NAME })).studyPlanId;
+      await addStudyPlanItem(planId, {
+        itemType: 'REGISTERED',
+        courseName: course.name,
+        foreignCredit: course.credits ?? 0,
+        sourceCourseId: course.courseId,
+        homeCourseId: null,
+        recognitionType: null,
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['study-plans'] });
+      void queryClient.invalidateQueries({ queryKey: ['universities', universityId] });
+    },
+  });
 }
 
 export default function CoursesTab({
   universityId,
+  studyPlanId,
   courses,
   cases,
 }: {
   universityId: number;
+  studyPlanId: number | null;
   courses: Course[];
   cases: CourseCase[];
 }) {
   const navigate = useNavigate();
-  const [added, setAdded] = useState<number[]>([]);
+  const plan = useStudyPlanDetail(studyPlanId ?? 0);
+  const addToPlan = useAddToPlan(universityId, studyPlanId);
+  const added = new Set(plan.data?.items.map((i) => i.sourceCourseId));
 
   if (courses.length === 0 && cases.length === 0) {
     return (
@@ -81,7 +102,7 @@ export default function CoursesTab({
                   render: (c) => <span className="font-medium">{c.name}</span>,
                 },
                 { key: 'code', header: '과목 코드', width: 207, render: (c) => c.code },
-                { key: 'credits', header: '학점', width: 138, render: (c) => c.credits },
+                { key: 'credits', header: '학점', width: 138, render: (c) => c.credits ?? '-' },
                 {
                   key: 'case',
                   header: '인정 사례',
@@ -97,14 +118,12 @@ export default function CoursesTab({
                   width: 230,
                   render: (c) => (
                     <AddToPlanButton
-                      added={added.includes(c.courseId)}
-                      onClick={() =>
-                        setAdded((prev) =>
-                          prev.includes(c.courseId)
-                            ? prev.filter((id) => id !== c.courseId)
-                            : [...prev, c.courseId],
-                        )
+                      added={added.has(c.courseId)}
+                      disabled={
+                        !c.credits ||
+                        (addToPlan.isPending && addToPlan.variables?.courseId === c.courseId)
                       }
+                      onClick={() => addToPlan.mutate(c)}
                     />
                   ),
                 },
@@ -130,10 +149,7 @@ export default function CoursesTab({
                     key: 'foreign',
                     header: '교환교 과목',
                     render: (c) => (
-                      <span className="flex items-center gap-2 font-medium">
-                        {c.foreignCourse}
-                        {c.isSample && <SampleTag />}
-                      </span>
+                      <span className="flex items-center gap-2 font-medium">{c.foreignCourse}</span>
                     ),
                   },
                   {
@@ -181,13 +197,23 @@ export default function CoursesTab({
   );
 }
 
-function AddToPlanButton({ added, onClick }: { added: boolean; onClick: () => void }) {
+// 담은 과목 빼기는 수강계획 화면에서 함
+function AddToPlanButton({
+  added,
+  disabled,
+  onClick,
+}: {
+  added: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       aria-pressed={added}
+      disabled={added || disabled}
       onClick={onClick}
-      className={`flex h-11 items-center gap-2 rounded-[10px] border px-3.5 text-[18px] font-semibold transition-[transform,colors] active:scale-95 ${
+      className={`flex h-11 items-center gap-2 rounded-[10px] border px-3.5 text-[18px] font-semibold transition-[transform,colors] active:scale-95 disabled:active:scale-100 ${
         added
           ? 'bg-accent-soft text-primary border-transparent'
           : 'border-line text-primary hover:bg-panel bg-white'

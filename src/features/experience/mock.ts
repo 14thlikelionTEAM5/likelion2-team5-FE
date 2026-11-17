@@ -1,7 +1,11 @@
 // TODO: /universities/search, /experiences/check-duplicate, /consents, /return-reports/extract, 본교 과목 검색 연결 후 삭제
 import type { ExperienceKind } from '@/app/paths';
-import { MOCK_SCHOOLS, type CreditType, type HousingType } from '@/features/schools/mock';
-import type { AdmissionResult, MajorType } from '@/shared/types/enums';
+import type {
+  AdmissionResult,
+  HousingType,
+  MajorType,
+  RecognitionType as CreditType,
+} from '@/shared/types/enums';
 
 // TODO: useMe() 연결 후 삭제
 export const MY_CONDITION = {
@@ -30,11 +34,10 @@ export const emptySpec = (): SpecForm => ({
 
 export type SchoolOption = { universityId: number; name: string; country: string };
 
-const SCHOOLS: SchoolOption[] = MOCK_SCHOOLS.map(({ universityId, name, country }) => ({
-  universityId,
-  name,
-  country,
-}));
+const SCHOOLS: SchoolOption[] = [
+  { universityId: 1, name: 'University of Amsterdam', country: '네덜란드' },
+  { universityId: 2, name: 'University of Sydney', country: '호주' },
+];
 
 export const searchSchools = (q: string) => {
   const word = q.trim().toLowerCase();
@@ -133,7 +136,7 @@ const MY: MyExperiences = {
         insurancePlace: '',
         visaPeriod: '',
         visaType: '',
-        housing: 'OFF_CAMPUS',
+        housing: 'SELF',
         courses: [
           { key: 3, code: 'MGT210', name: 'Organizational Behaviour', credits: '6 CP', rating: 5 },
           { key: 4, code: 'ACC101', name: 'Accounting Basics', credits: '6 CP', rating: 3 },
@@ -174,7 +177,7 @@ const MY: MyExperiences = {
       semester: 2,
       courseKey: 3,
       foreignCourse: 'Organizational Behaviour',
-      creditType: 'FREE_ELECTIVE',
+      creditType: 'GENERAL',
       credits: 2,
     },
   ],

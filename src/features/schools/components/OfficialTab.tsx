@@ -5,7 +5,7 @@ import InfoNote from '@/shared/ui/InfoNote';
 import Panel from '@/shared/ui/Panel';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Table from '@/shared/ui/Table';
-import type { CriterionResult, Eligibility, OfficialInfo } from '../mock';
+import type { CriterionResult, Eligibility, OfficialInfo } from '../types';
 
 const JUDGMENT_STYLE: Record<
   Eligibility,
@@ -17,13 +17,13 @@ const JUDGMENT_STYLE: Record<
     box: 'bg-accent-soft text-accent-strong',
     circle: 'bg-accent',
   },
-  INELIGIBLE: {
+  NOT_ELIGIBLE: {
     label: '지원 불가',
     icon: 'x',
     box: 'bg-danger-soft text-danger',
     circle: 'bg-danger',
   },
-  UNKNOWN: {
+  NEEDS_CHECK: {
     label: '확인 필요',
     icon: 'info',
     box: 'bg-caution-soft text-caution',
@@ -37,7 +37,7 @@ const RESULT_BADGE = {
   UNKNOWN: { tone: 'caution', label: '확인 필요' },
 } as const satisfies Record<CriterionResult, object>;
 
-const dot = (date: string) => date.replaceAll('-', '.');
+const dot = (date: string | null) => (date ? date.replaceAll('-', '.') : '-');
 
 export default function OfficialTab({ info }: { info: OfficialInfo }) {
   const judgment = JUDGMENT_STYLE[info.judgment.result];
@@ -65,7 +65,7 @@ export default function OfficialTab({ info }: { info: OfficialInfo }) {
             <div className="flex flex-col gap-5">
               <Panel className="flex flex-col gap-2.5 text-[19px]">
                 <p className="font-semibold">공식 자료 요약</p>
-                <p className="text-ink-sub leading-[1.6]">
+                <p className="text-ink-sub leading-[1.6] whitespace-pre-line">
                   {info.summary ?? '아직 정리된 공식 자료가 없어요.'}
                 </p>
               </Panel>
