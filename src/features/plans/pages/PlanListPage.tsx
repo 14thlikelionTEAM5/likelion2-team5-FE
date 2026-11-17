@@ -6,6 +6,7 @@ import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
 import { useCreateStudyPlan, useDeleteStudyPlan } from '@/shared/api/studyPlans';
+import { readMockStudyPlans, writeMockStudyPlans } from '../mockStudyPlans';
 
 type StudyPlanSummary = {
   studyPlanId: number;
@@ -81,7 +82,17 @@ export default function PlanListPage() {
     setCreateError('');
     if (USE_MOCK) {
       const now = new Date().toISOString();
-      const mockId = -Date.now();
+      const mockId = Date.now();
+      const mockPlan = {
+        studyPlanId: mockId,
+        universityId,
+        universityName: `대학 ID ${universityId} (미리보기)`,
+        name,
+        createdAt: now,
+        updatedAt: now,
+        items: [],
+      };
+      writeMockStudyPlans([mockPlan, ...readMockStudyPlans()]);
       setPlans((previous) => [{
         studyPlanId: mockId,
         universityId,
@@ -102,7 +113,7 @@ export default function PlanListPage() {
       setIsCreateOpen(false);
       setCreateName('');
       setCreateUniversityId('');
-      setNotice('개발용 미리보기 계획입니다. 서버에는 저장되지 않으며 새로고침 시 사라집니다.');
+      setNotice('개발용 미리보기 계획입니다. 서버에는 저장되지 않습니다.');
       return;
     }
     try {
@@ -121,6 +132,24 @@ export default function PlanListPage() {
 
   useEffect(() => {
     if (USE_MOCK) {
+      const saved = readMockStudyPlans();
+      setPlans(saved.map((plan) => ({
+        studyPlanId: plan.studyPlanId,
+        universityId: plan.universityId,
+        universityName: plan.universityName,
+        name: plan.name,
+        courseCount: plan.items.length,
+        totalExpectedCredits: null,
+        createdAt: plan.createdAt,
+        updatedAt: plan.updatedAt,
+      })));
+      setDetails(Object.fromEntries(saved.map((plan) => [plan.studyPlanId, {
+        studyPlanId: plan.studyPlanId,
+        name: plan.name,
+        universityId: plan.universityId,
+        universityName: plan.universityName,
+        items: plan.items,
+      }])));
       setIsLoading(false);
       setError('');
       return;
@@ -163,6 +192,7 @@ export default function PlanListPage() {
     if (deleteTargetId === null || deletePlan.isPending) return;
     setDeleteError('');
     if (USE_MOCK) {
+      writeMockStudyPlans(readMockStudyPlans().filter((plan) => plan.studyPlanId !== deleteTargetId));
       setPlans((previous) => previous.filter((plan) => plan.studyPlanId !== deleteTargetId));
       setDetails((previous) => {
         const next = { ...previous };
@@ -264,7 +294,7 @@ export default function PlanListPage() {
                     <span className="font-normal text-ink-muted"> · 참고용 예상치</span>
                   </p>
                   <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => USE_MOCK ? setNotice('Mock 계획의 편집 기능은 제공하지 않습니다.') : navigate(PATHS.planEdit(plan.studyPlanId))} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">편집</button>
+                    <button type="button" onClick={() => navigate(PATHS.planEdit(plan.studyPlanId))} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">편집</button>
                     <button type="button" onClick={() => { setDeleteError(''); setDeleteTargetId(plan.studyPlanId); }} className="min-h-[46px] min-w-[95px] rounded-[7px] border border-primary px-4 text-[17px] font-semibold text-primary hover:bg-primary-soft">삭제</button>
                   </div>
                 </div>
