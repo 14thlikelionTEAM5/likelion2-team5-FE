@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -19,6 +18,7 @@ export default function FavoritesPage() {
   const { data, isLoading, error } = useBookmarks();
   const { mutate: removeBookmark, isPending: isRemoving, variables: removingId, error: removeError } = useRemoveBookmark();
   const favorites = data?.universities ?? [];
+  const isMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true';
 
   const [country, setCountry] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -103,6 +103,10 @@ export default function FavoritesPage() {
             </span>
           </p>
         </div>
+
+        {isMock && (
+          <p className="text-sm text-ink-muted">개발용 Mock 모드입니다. 찜 목록 변경은 실제 서버에 저장되지 않습니다.</p>
+        )}
 
         {removeError && (
           <p role="alert" className="text-danger text-sm">
