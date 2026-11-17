@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import type { HousingType } from '@/features/schools/mock';
+import type { HousingType } from '@/shared/types/enums';
 import Button from '@/shared/ui/Button';
 import Icon from '@/shared/ui/Icon';
 import Input from '@/shared/ui/Input';
@@ -9,7 +9,7 @@ import { emptyCourse, type CourseRow, type ReportForm } from '../mock';
 
 const HOUSING: { value: HousingType; label: string }[] = [
   { value: 'DORM', label: '기숙사' },
-  { value: 'OFF_CAMPUS', label: '자취' },
+  { value: 'SELF', label: '자취' },
   { value: 'OTHER', label: '기타' },
 ];
 

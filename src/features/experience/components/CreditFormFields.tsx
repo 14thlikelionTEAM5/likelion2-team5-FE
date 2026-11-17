@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CREDIT_TYPE } from '@/features/schools/components/CoursesTab';
-import type { CreditType } from '@/features/schools/mock';
+import type { RecognitionType as CreditType } from '@/shared/types/enums';
 import Icon from '@/shared/ui/Icon';
 import Input from '@/shared/ui/Input';
 import Segment from '@/shared/ui/Segment';
