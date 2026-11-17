@@ -1,3 +1,5 @@
+import { ApiError } from '@/shared/api/client';
+import { sendSchoolEmailCode, verifySchoolEmailCode } from '../api/schoolEmail';
 import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes } from 'react';
 import { Link } from 'react-router';
 import { PATHS } from '@/app/paths';
@@ -117,7 +119,12 @@ export default function SignupPage() {
   const [checkedNickname, setCheckedNickname] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [expiresAt, setExpiresAt] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [now, setNow] = useState(0);
+  const [resendAt, setResendAt] = useState(0);
+  const [pending, setPending] = useState<'send' | 'verify' | null>(null);
+  const [sendError, setSendError] = useState('');
+  const secondsLeft = Math.max(0, Math.ceil((expiresAt - now) / 1000));
+  const resendSeconds = Math.max(0, Math.ceil((resendAt - now) / 1000));
   const [code, setCode] = useState('');
   const [verificationError, setVerificationError] = useState('');
 
@@ -128,20 +135,54 @@ export default function SignupPage() {
   const [documentTitle, setDocumentTitle] = useState('서비스 이용약관');
   const allAgreed = terms && privacy;
 
+  const timerRunning = !!expiresAt && !verified && (secondsLeft > 0 || resendSeconds > 0);
   useEffect(() => {
-    if (!expiresAt || verified) return;
-    const timer = window.setInterval(() => {
-      setSecondsLeft(Math.max(0, Math.min(300, Math.ceil((expiresAt - Date.now()) / 1000))));
-    }, 250);
+    if (!timerRunning) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
-  }, [expiresAt, verified]);
+  }, [timerRunning]);
 
-  function previewEmailSent() {
-    setVerified(false);
-    setCode('');
+  async function sendEmail() {
+    if (pending || Date.now() < resendAt || verified) return;
+    setPending('send');
+    setSendError('');
+    try {
+      const sent = await sendSchoolEmailCode(email.trim());
+      const deadline = Date.parse(sent?.expiresAt ?? '');
+      if (!Number.isFinite(deadline)) throw new Error('Invalid expiry');
+      setNow(Date.now());
+      setExpiresAt(deadline);
+      setResendAt(Date.parse(sent.resendAvailableAt ?? '') || 0);
+      setCode('');
+      setVerificationError('');
+    } catch (error) {
+      setSendError(
+        error instanceof ApiError
+          ? error.message
+          : '인증 메일을 발송하지 못했어요. 다시 시도해주세요.',
+      );
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function verifyEmail() {
+    if (pending || verified || code.length !== 6 || Date.now() >= expiresAt) return;
+    setPending('verify');
     setVerificationError('');
-    setSecondsLeft(300);
-    setExpiresAt(Date.now() + 300_000);
+    try {
+      const result = await verifySchoolEmailCode(email.trim(), code);
+      if (result?.verified === true) setVerified(true);
+      else setVerificationError('인증번호가 올바르지 않아요');
+    } catch (error) {
+      setVerificationError(
+        error instanceof ApiError
+          ? error.message
+          : '인증번호를 확인하지 못했어요. 다시 시도해주세요.',
+      );
+    } finally {
+      setPending(null);
+    }
   }
 
   const [major, setMajor] = useState('');
@@ -266,7 +307,17 @@ export default function SignupPage() {
                     placeholder="name@hufs.ac.kr"
                     className={controlClass}
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => {
+                      const nextEmail = event.target.value;
+                      setEmail(nextEmail);
+                      if (nextEmail.trim() === email.trim()) return;
+                      setVerified(false);
+                      setSendError('');
+                      setResendAt(0);
+                      setCode('');
+                      setVerificationError('');
+                      setExpiresAt(0);
+                    }}
                     aria-invalid={!!emailError}
                     aria-describedby="signup-email-message"
                   />
@@ -433,7 +484,7 @@ export default function SignupPage() {
                         <input
                           id="signup-code"
                           type={verified ? 'password' : 'text'}
-                          readOnly={verified}
+                          readOnly={verified || !!pending}
                           aria-invalid={!!verificationError}
                           aria-describedby={verificationError ? 'signup-code-error' : undefined}
                           inputMode="numeric"
@@ -456,19 +507,11 @@ export default function SignupPage() {
                       </div>
                       <button
                         type="button"
-                        disabled={verified || code.length !== 6 || !secondsLeft}
-                        onClick={() => {
-                          if (Date.now() >= expiresAt) return;
-                          if (import.meta.env.DEV && code === '123456') {
-                            setVerified(true);
-                            setVerificationError('');
-                            return;
-                          }
-                          setVerificationError('인증번호가 올바르지 않아요');
-                        }}
+                        disabled={!!pending || verified || code.length !== 6 || !secondsLeft}
+                        onClick={verifyEmail}
                         className="rounded-lg border border-[#cdd7e6] px-3 text-sm disabled:opacity-50"
                       >
-                        인증 확인
+                        {pending === 'verify' ? '확인 중…' : '인증 확인'}
                       </button>
                     </div>
                     {verificationError && (
@@ -502,29 +545,37 @@ export default function SignupPage() {
                   )}
                   <button
                     type="button"
-                    onClick={previewEmailSent}
-                    className="cursor-pointer justify-self-start text-sm text-[#253357] underline underline-offset-2"
+                    onClick={sendEmail}
+                    disabled={!!pending || verified || resendSeconds > 0}
+                    className="cursor-pointer justify-self-start text-sm text-[#253357] underline underline-offset-2 disabled:cursor-default disabled:opacity-60"
                   >
-                    인증 메일 재발송
+                    {pending === 'send'
+                      ? '발송 중…'
+                      : resendSeconds > 0 && !verified
+                        ? `인증 메일 재발송 (${resendSeconds}초)`
+                        : '인증 메일 재발송'}
                   </button>
                 </div>
               ) : (
                 <button
                   type="button"
-                  onClick={previewEmailSent}
+                  onClick={sendEmail}
+                  disabled={!!pending || verified || resendSeconds > 0}
                   className="mt-4 min-h-12 w-full rounded-xl bg-[#253357] px-4 text-sm font-semibold text-white hover:bg-[#304367]"
                 >
-                  인증 메일 발송
+                  {pending === 'send' ? '발송 중…' : '인증 메일 발송'}
                 </button>
+              )}
+              {sendError && (
+                <p role="alert" className="mt-3 text-sm text-[#8E5656]">
+                  {sendError}
+                </p>
               )}
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setVerified(false);
-                    setExpiresAt(0);
-                    setStepIndex(0);
-                  }}
+                  onClick={() => setStepIndex(0)}
+                  disabled={!!pending}
                   className="min-h-11 rounded-xl border border-[#cdd7e6] px-3 text-sm font-semibold hover:bg-[#f6f8fb]"
                 >
                   이전
@@ -605,7 +656,7 @@ export default function SignupPage() {
                           setDocumentTitle(title);
                           termsDialog.current?.showModal();
                         }}
-                        className="cursor-pointer text-xs text-[#586782] underline underline-offset-2"
+                        className="cursor-pointer text-xs text-[#586782] underline underline-offset-2 disabled:cursor-default disabled:opacity-60"
                       >
                         전문 보기
                       </button>
