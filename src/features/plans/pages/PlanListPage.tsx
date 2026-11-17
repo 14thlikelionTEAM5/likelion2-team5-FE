@@ -6,7 +6,9 @@ import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
 import { useCreateStudyPlan, useDeleteStudyPlan } from '@/shared/api/studyPlans';
-import { readMockStudyPlans, writeMockStudyPlans } from '../mockStudyPlans';
+import { calculateMockPlan, getMockTotalExpectedCredit, readMockStudyPlans, writeMockStudyPlans } from '../mockStudyPlans';
+import { searchUniversities } from '@/shared/api/universities';
+import type { UniversitySearchResult } from '@/shared/api/universities';
 
 type StudyPlanSummary = {
   studyPlanId: number;
@@ -34,6 +36,22 @@ type StudyPlanDetail = {
 };
 
 const MAX_PLANS = 5;
+// Figma 예시의 기준 학점. 실제 개인별 기준은 추후 명세에 맞춰 변경할 수 있습니다.
+const REFERENCE_CREDITS = 18;
+
+// 학교 검색 API 연결 전 Mock 검색용 협정교 목록입니다.
+// 실제 환경에서는 대학 검색 API 명세를 받은 뒤 교체해야 합니다.
+const MOCK_UNIVERSITIES = [
+  { id: 101, name: 'University of Toronto', country: '캐나다' },
+  { id: 102, name: 'University of British Columbia', country: '캐나다' },
+  { id: 103, name: 'University of Melbourne', country: '호주' },
+  { id: 104, name: 'Waseda University', country: '일본' },
+  { id: 105, name: 'University of Groningen', country: '네덜란드' },
+  { id: 106, name: 'Texas State University', country: '미국' },
+  { id: 107, name: 'Florida International University', country: '미국' },
+] as const;
+
+const DEFAULT_PLAN_NAME = '2027-1 교환학생 수강계획';
 const USE_MOCK = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true';
 const recognitionLabel = {
   MAJOR_REQUIRED: '전필',
@@ -57,22 +75,57 @@ export default function PlanListPage() {
   const [notice, setNotice] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isLimitAlertOpen, setIsLimitAlertOpen] = useState(false);
   const [createName, setCreateName] = useState('');
-  const [createUniversityId, setCreateUniversityId] = useState('');
+  const [schoolResults, setSchoolResults] = useState<UniversitySearchResult[]>([]);
+  const [selectedSchool, setSelectedSchool] = useState<UniversitySearchResult | null>(null);
+  const [schoolSearchError, setSchoolSearchError] = useState('');
+  const [schoolSearching, setSchoolSearching] = useState(false);
+  const [schoolQuery, setSchoolQuery] = useState('');
+  const [appliedSchoolQuery, setAppliedSchoolQuery] = useState('');
+  const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
   const [createError, setCreateError] = useState('');
   const createPlan = useCreateStudyPlan();
   const deletePlan = useDeleteStudyPlan();
 
+  const handleSchoolSearch = async (keyword = schoolQuery) => {
+    const normalized = keyword.trim();
+    const length = Array.from(normalized).length;
+    if (length < 1 || length > 50) {
+      setSchoolSearchError('학교명은 1~50자로 입력해 주세요.');
+      setSchoolResults([]);
+      return;
+    }
+    setSchoolSearchError('');
+    setAppliedSchoolQuery(normalized);
+    if (USE_MOCK) {
+      const matches = MOCK_UNIVERSITIES.filter((school) => school.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())).slice(0, 10);
+      setSchoolResults(matches.map((school) => ({ universityId: school.id, name: school.name, country: school.country })));
+      return;
+    }
+    setSchoolSearching(true);
+    try {
+      const result = await searchUniversities(normalized);
+      setSchoolResults(result);
+    } catch (err) {
+      setSchoolResults([]);
+      setSchoolSearchError(err instanceof Error ? err.message : '학교 검색에 실패했습니다.');
+    } finally {
+      setSchoolSearching(false);
+    }
+  };
+
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const universityId = Number(createUniversityId);
-    const name = createName.trim();
-    if (!Number.isSafeInteger(universityId) || universityId <= 0 || !name) {
-      setCreateError('대학 ID는 양의 정수로, 계획 이름은 비워 두지 않고 입력해 주세요.');
+    const universityId = selectedSchoolId;
+    const name = USE_MOCK ? DEFAULT_PLAN_NAME : (createName.trim() || DEFAULT_PLAN_NAME);
+    if (universityId === null || !Number.isSafeInteger(universityId) || universityId <= 0 || !name) {
+      setCreateError('검색 결과에서 학교를 먼저 선택해 주세요.');
       return;
     }
     if (plans.length >= MAX_PLANS) {
-      setCreateError('수강계획은 최대 5개까지 생성할 수 있습니다.');
+      setIsCreateOpen(false);
+      setIsLimitAlertOpen(true);
       return;
     }
     if (plans.some((plan) => plan.universityId === universityId)) {
@@ -86,7 +139,7 @@ export default function PlanListPage() {
       const mockPlan = {
         studyPlanId: mockId,
         universityId,
-        universityName: `대학 ID ${universityId} (미리보기)`,
+        universityName: selectedSchool?.name ?? `대학 ID ${universityId}`,
         name,
         createdAt: now,
         updatedAt: now,
@@ -96,7 +149,7 @@ export default function PlanListPage() {
       setPlans((previous) => [{
         studyPlanId: mockId,
         universityId,
-        universityName: `대학 ID ${universityId} (미리보기)`,
+        universityName: selectedSchool?.name ?? `대학 ID ${universityId}`,
         name,
         courseCount: 0,
         totalExpectedCredits: 0,
@@ -107,20 +160,28 @@ export default function PlanListPage() {
         studyPlanId: mockId,
         name,
         universityId,
-        universityName: `대학 ID ${universityId} (미리보기)`,
+        universityName: selectedSchool?.name ?? `대학 ID ${universityId}`,
         items: [],
       } }));
       setIsCreateOpen(false);
       setCreateName('');
-      setCreateUniversityId('');
-      setNotice('개발용 미리보기 계획입니다. 서버에는 저장되지 않습니다.');
+      setSchoolResults([]);
+      setSelectedSchool(null);
+      setSchoolQuery('');
+      setAppliedSchoolQuery('');
+      setSelectedSchoolId(null);
+      setNotice('수강계획이 생성되었습니다.');
       return;
     }
     try {
       const result = await createPlan.mutateAsync({ universityId, name });
       setIsCreateOpen(false);
       setCreateName('');
-      setCreateUniversityId('');
+      setSchoolResults([]);
+      setSelectedSchool(null);
+      setSchoolQuery('');
+      setAppliedSchoolQuery('');
+      setSelectedSchoolId(null);
       setNotice('수강계획이 생성되었습니다.');
       setReloadKey((key) => key + 1);
       // 생성 API 응답의 실제 studyPlanId를 사용해 편집 화면으로 이동합니다.
@@ -132,14 +193,14 @@ export default function PlanListPage() {
 
   useEffect(() => {
     if (USE_MOCK) {
-      const saved = readMockStudyPlans();
+      const saved = readMockStudyPlans().map(calculateMockPlan);
       setPlans(saved.map((plan) => ({
         studyPlanId: plan.studyPlanId,
         universityId: plan.universityId,
         universityName: plan.universityName,
         name: plan.name,
         courseCount: plan.items.length,
-        totalExpectedCredits: null,
+        totalExpectedCredits: getMockTotalExpectedCredit(plan),
         createdAt: plan.createdAt,
         updatedAt: plan.updatedAt,
       })));
@@ -200,7 +261,7 @@ export default function PlanListPage() {
         return next;
       });
       setDeleteTargetId(null);
-      setNotice('Mock 계획을 목록에서 제거했습니다. 서버에는 변경사항이 저장되지 않습니다.');
+      setNotice('수강계획이 삭제되었습니다.');
       return;
     }
     try {
@@ -233,14 +294,20 @@ export default function PlanListPage() {
           </p>
           <button
             type="button"
-            onClick={() => { setCreateError(''); setIsCreateOpen(true); }}
-            disabled={plans.length >= MAX_PLANS || isLoading}
+            onClick={() => {
+              if (plans.length >= MAX_PLANS) {
+                setIsLimitAlertOpen(true);
+                return;
+              }
+              setCreateError('');
+              setIsCreateOpen(true);
+            }}
+            disabled={isLoading}
             className="min-h-[52px] min-w-[190px] rounded-[10px] bg-primary px-6 text-[18px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[240px]"
           >
             + 새 계획 만들기
           </button>
         </div>
-        {USE_MOCK && <p className="mb-4 text-sm text-caution">개발용 Mock 모드입니다. 생성된 계획은 서버에 저장되지 않습니다.</p>}
         {notice && <p role="status" className="mb-4 text-sm text-ink-sub">{notice}</p>}
 
         {isLoading ? (
@@ -290,7 +357,16 @@ export default function PlanListPage() {
 
                 <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
                   <p className="text-[17px] font-semibold text-primary sm:text-[19px]">
-                    합계 {plan.courseCount}과목 / {plan.totalExpectedCredits === null ? '계산 불가' : `${plan.totalExpectedCredits}학점`}
+                    {(() => {
+                      const items = details[plan.studyPlanId]?.items;
+                      const totalCredits = items
+                        ? (items.length === 0 ? 0 : items.every((item) => item.expectedCredit === null)
+                          ? null : Math.round(items.reduce((sum, item) => sum + (item.expectedCredit ?? 0), 0) * 100) / 100)
+                        : plan.totalExpectedCredits;
+                      return totalCredits === null
+                        ? '합계 계산 불가'
+                        : `합계 ${totalCredits} / ${REFERENCE_CREDITS}학점`;
+                    })()}
                     <span className="font-normal text-ink-muted"> · 참고용 예상치</span>
                   </p>
                   <div className="flex items-center gap-3">
@@ -307,26 +383,129 @@ export default function PlanListPage() {
 
 
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onMouseDown={(event) => {
-          if (event.target === event.currentTarget && !createPlan.isPending) setIsCreateOpen(false);
-        }}>
-          <form onSubmit={(event) => { void handleCreate(event); }} role="dialog" aria-modal="true" aria-labelledby="create-plan-title" className="w-full max-w-[460px] rounded-[18px] bg-white p-7 shadow-xl">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 id="create-plan-title" className="text-[24px] font-semibold text-ink">새 수강계획 만들기</h2>
-              <button type="button" aria-label="닫기" disabled={createPlan.isPending} onClick={() => setIsCreateOpen(false)} className="text-2xl text-ink-muted">×</button>
-            </div>
-            <p className="mb-5 text-sm text-ink-muted">대학 선택 UI 연동 전이므로 협정교 목록의 실제 대학 ID를 입력해 주세요.</p>
-            <label htmlFor="create-university-id" className="mb-2 block text-sm font-semibold text-ink">대학 ID</label>
-            <input id="create-university-id" type="number" min="1" step="1" required value={createUniversityId} onChange={(event) => setCreateUniversityId(event.target.value)} className="mb-4 w-full rounded-[8px] border border-line px-4 py-3 text-ink" placeholder="예: 1" />
-            <label htmlFor="create-plan-name" className="mb-2 block text-sm font-semibold text-ink">계획 이름</label>
-            <input id="create-plan-name" type="text" required value={createName} onChange={(event) => setCreateName(event.target.value)} className="mb-4 w-full rounded-[8px] border border-line px-4 py-3 text-ink" placeholder="예: 2027-1 교환학생 수강계획" />
-            {USE_MOCK && <p className="mb-4 text-sm text-caution">Mock 모드: 실제 서버에는 저장되지 않습니다.</p>}
-            {createError && <p role="alert" className="mb-4 text-sm text-danger">{createError}</p>}
-            <div className="flex gap-3">
-              <button type="button" disabled={createPlan.isPending} onClick={() => setIsCreateOpen(false)} className="min-h-[48px] flex-1 rounded-[8px] border border-line font-semibold text-ink">취소</button>
-              <button type="submit" disabled={createPlan.isPending} className="min-h-[48px] flex-1 rounded-[8px] bg-primary font-semibold text-white disabled:opacity-50">{createPlan.isPending ? '생성 중...' : '생성'}</button>
-            </div>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 py-6"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !createPlan.isPending) setIsCreateOpen(false);
+          }}
+        >
+          <form
+            onSubmit={(event) => { void handleCreate(event); }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-plan-title"
+            className="flex w-full max-w-[780px] flex-col overflow-hidden rounded-[15px] bg-white shadow-2xl"
+          >
+            <header className="flex min-h-[64px] items-center justify-between bg-primary px-6 text-white">
+              <h2 id="create-plan-title" className="text-[23px] font-bold">새 수강계획 만들기</h2>
+              <button type="button" aria-label="닫기" disabled={createPlan.isPending} onClick={() => setIsCreateOpen(false)} className="rounded p-2 text-[28px] leading-none hover:bg-white/10">×</button>
+            </header>
+
+            <>
+                <div className="border-b border-line bg-[#f1f5f9] px-6 py-5">
+                  <label htmlFor="school-search" className="mb-2 block text-[16px] font-semibold text-primary">학교 검색</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="school-search"
+                      type="search"
+                      value={schoolQuery}
+                      onChange={(event) => { setSchoolQuery(event.target.value); setSchoolSearchError(''); setSchoolResults([]); setAppliedSchoolQuery(''); setSelectedSchoolId(null); setSelectedSchool(null); }}
+                      onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void handleSchoolSearch(); } }}
+                      placeholder="학교명을 입력하세요"
+                      className="min-w-0 flex-1 rounded-[7px] border border-line bg-white px-4 py-3 text-ink outline-none focus:border-primary"
+                    />
+                    <button type="button" onClick={() => void handleSchoolSearch()} className="min-w-[100px] rounded-full bg-[#398aa2] px-5 py-3 font-semibold text-white hover:opacity-90" disabled={schoolSearching}>{schoolSearching ? '검색 중...' : '검색'}</button>
+                  </div>
+                </div>
+
+                <div className="grid min-h-[300px] grid-cols-1 gap-0 border-b border-line sm:grid-cols-2">
+                  <section className="min-w-0 border-b border-line sm:border-b-0 sm:border-r" aria-labelledby="school-results-title">
+                    <h3 id="school-results-title" className="bg-[#e5ecf3] px-5 py-3 text-base font-semibold text-primary">검색 결과</h3>
+                    <div className="max-h-[310px] space-y-2 overflow-y-auto p-4">
+                      {schoolSearchError && <p role="alert" className="px-3 text-sm text-danger">{schoolSearchError}</p>}
+                      {schoolResults.map((school) => {
+                        const alreadyAdded = plans.some((plan) => plan.universityId === school.universityId);
+                        const isSelected = selectedSchoolId === school.universityId;
+                        return (
+                          <button
+                            key={school.universityId}
+                            type="button"
+                            disabled={alreadyAdded || createPlan.isPending}
+                            onClick={() => { setSelectedSchoolId(school.universityId); setSelectedSchool(school); setCreateError(''); }}
+                            aria-pressed={isSelected}
+                            className={`flex w-full items-center gap-3 rounded-[12px] border px-4 py-3 text-left transition-colors ${isSelected ? 'border-primary bg-[#edf5f7]' : 'border-line bg-[#f7fafc] hover:border-primary'} disabled:cursor-not-allowed disabled:opacity-50`}
+                          >
+                            <span className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary' : 'border-[#bbcad7]'}`}>
+                              {isSelected && <span className="h-[9px] w-[9px] rounded-full bg-primary" />}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block break-words text-[14px] font-semibold text-ink">{school.name}</span>
+                              <span className="block text-[12px] text-ink-muted">{school.country}</span>
+                            </span>
+                            {alreadyAdded && <span className="shrink-0 text-[11px] text-ink-muted">이미 계획 있음</span>}
+                          </button>
+                        );
+                      })}
+                      {appliedSchoolQuery && !schoolSearching && !schoolSearchError && schoolResults.length === 0 && (
+                        <p className="py-8 text-center text-sm text-ink-muted">검색 결과가 없습니다.</p>
+                      )}
+                    </div>
+                  </section>
+                  <section className="min-w-0" aria-labelledby="selected-school-title">
+                    <h3 id="selected-school-title" className="bg-[#e5ecf3] px-5 py-3 text-base font-semibold text-primary">선택한 학교</h3>
+                    {selectedSchool ? (
+                      <dl className="grid grid-cols-[75px_minmax(0,1fr)] gap-x-3 gap-y-5 px-5 py-6 text-sm">
+                        <dt className="font-semibold text-ink-sub">학교명</dt>
+                        <dd className="break-words font-semibold text-primary">{selectedSchool?.name}</dd>
+                        <dt className="font-semibold text-ink-sub">국가</dt>
+                        <dd className="text-ink">{selectedSchool?.country}</dd>
+                      </dl>
+                    ) : (
+                      <p className="px-5 py-6 text-sm text-ink-muted">왼쪽 검색 결과에서 학교를 선택해 주세요.</p>
+                    )}
+                  </section>
+                </div>
+                <div className="px-6 py-4">
+                  <label htmlFor="create-plan-name" className="mb-2 block text-sm font-semibold text-ink">계획 이름</label>
+                  <input id="create-plan-name" type="text" maxLength={100} value={createName} onChange={(event) => setCreateName(event.target.value)} className="w-full rounded-[8px] border border-line px-4 py-3 text-ink" placeholder={DEFAULT_PLAN_NAME} />
+                </div>
+            </>
+            {createError && <p role="alert" className="px-6 pt-3 text-sm text-danger">{createError}</p>}
+            <footer className="flex items-center justify-end gap-3 p-5">
+              <button type="button" onClick={() => setIsCreateOpen(false)} disabled={createPlan.isPending} className="rounded-[8px] border border-line px-5 py-3 font-semibold text-ink">취소</button>
+              <button type="submit" disabled={createPlan.isPending || selectedSchoolId === null} className="rounded-full bg-[#398aa2] px-7 py-3 font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">{createPlan.isPending ? '생성 중...' : '생성하기'}</button>
+            </footer>
           </form>
+        </div>
+      )}
+
+      {isLimitAlertOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 py-8"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsLimitAlertOpen(false);
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="plan-limit-title"
+            className="w-full max-w-[420px] rounded-[16px] bg-white px-5 py-5 shadow-xl sm:px-6"
+          >
+            <h2 id="plan-limit-title" className="text-[18px] font-semibold text-primary">
+              수강계획은 최대 5개까지 만들 수 있어요.
+            </h2>
+            <div className="mt-5 flex justify-start">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setIsLimitAlertOpen(false)}
+                className="min-h-[40px] rounded-[8px] bg-[#398aa2] px-5 text-[15px] font-semibold text-white hover:opacity-90"
+              >
+                확인
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -339,7 +518,7 @@ export default function PlanListPage() {
               <h3 id="delete-plan-title" className="text-[24px] font-semibold text-ink">삭제하시겠습니까?</h3>
               <button type="button" aria-label="닫기" disabled={deletePlan.isPending} onClick={() => setDeleteTargetId(null)} className="text-2xl text-ink-muted">×</button>
             </div>
-            <p className="mb-5 text-sm text-ink-muted">{USE_MOCK ? "Mock 모드: 목록에서만 제거되며 서버에는 저장되지 않습니다." : "이 계획과 연결된 과목도 함께 삭제되며 되돌릴 수 없습니다."}</p>
+            <p className="mb-5 text-sm text-ink-muted">"이 계획과 연결된 과목도 함께 삭제되며 되돌릴 수 없습니다."</p>
             {deleteError && <p role="alert" className="mb-4 text-sm text-danger">{deleteError}</p>}
             <div className="flex gap-3">
               <button type="button" disabled={deletePlan.isPending} onClick={() => setDeleteTargetId(null)} className="min-h-[55px] flex-1 rounded-[8px] border border-line font-semibold text-ink disabled:opacity-50">취소</button>

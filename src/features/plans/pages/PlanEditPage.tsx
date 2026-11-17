@@ -4,8 +4,10 @@ import { useNavigate, useParams } from 'react-router';
 import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
+import { searchHomeCourses } from '@/shared/api/homeCourses';
+import type { HomeCourseSearchResult } from '@/shared/api/homeCourses';
 import { useAddStudyPlanItem, useDeleteStudyPlanItem, useRenameStudyPlan, useUpdateStudyPlanItem } from '@/shared/api/studyPlans';
-import { readMockStudyPlans, saveMockStudyPlan } from '../mockStudyPlans';
+import { calculateMockPlan, getMockTotalExpectedCredit, MOCK_SEMESTER_LIMIT, readMockStudyPlans, saveMockStudyPlan } from '../mockStudyPlans';
 import type { MockPlanItem } from '../mockStudyPlans';
 
 type RecognitionType = 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
@@ -38,6 +40,89 @@ const LABELS: Record<RecognitionType, string> = {
 };
 const inputClass = 'h-[52px] w-full rounded-[10px] border border-line bg-white px-4 text-[17px] text-ink outline-none focus:border-primary';
 const outlineButtonClass = 'inline-flex min-h-[43px] items-center justify-center rounded-[7px] border border-primary px-5 text-[16px] font-semibold text-primary hover:bg-primary-soft';
+
+// 화면 테스트용 예시 과목입니다. 공식 본교 교과목 데이터가 아니며 서버로 전송하지 않습니다.
+const MOCK_HOME_COURSES: { id: number; name: string; category: RecognitionType }[] = [
+  { id: 900001, name: '마케팅원론', category: 'MAJOR_ELECTIVE' },
+  { id: 900002, name: '재무회계', category: 'MAJOR_ELECTIVE' },
+  { id: 900003, name: '경영학원론', category: 'MAJOR_REQUIRED' },
+  { id: 900004, name: '국제경영', category: 'MAJOR_ELECTIVE' },
+  { id: 900005, name: '글로벌문화의 이해', category: 'GENERAL' },
+];
+
+function formatHomeCourse(id: number | null): string {
+  if (id === null) return '-';
+  const example = MOCK_HOME_COURSES.find((course) => course.id === id);
+  return example ? example.name : `본교 과목 ID ${id}`;
+}
+
+type HomeCourseFieldProps = {
+  isMock: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  recognitionType: RecognitionType;
+};
+
+function HomeCourseField({ isMock, value, onChange, recognitionType }: HomeCourseFieldProps) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<HomeCourseSearchResult[]>([]);
+  const [selected, setSelected] = useState<HomeCourseSearchResult | null>(null);
+  const [searchError, setSearchError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const search = async () => {
+    const keyword = query.trim();
+    const length = Array.from(keyword).length;
+    if (length < 1 || length > 50) {
+      setSearchError('과목명은 1~50자로 입력해 주세요.');
+      setResults([]);
+      return;
+    }
+    if (recognitionType === 'GENERAL') return;
+    setSearchError('');
+    setHasSearched(true);
+    setIsSearching(true);
+    try {
+      if (isMock) {
+        const found = MOCK_HOME_COURSES.filter((course) => course.category === recognitionType && course.name.toLowerCase().includes(keyword.toLowerCase())).slice(0, 10);
+        setResults(found.map((course) => ({ homeCourseId: course.id, name: course.name, code: `TEST${course.id}`, credit: 3, category: course.category as 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' })));
+      } else {
+        setResults(await searchHomeCourses(keyword, recognitionType));
+      }
+    } catch (err) {
+      setResults([]);
+      setSearchError(err instanceof Error ? err.message : '본교 과목 검색에 실패했습니다.');
+    }
+    setIsSearching(false);
+  };
+
+  if (recognitionType === 'GENERAL') return <p className="text-[14px] text-ink-muted">교양 과목은 본교 인정 과목 선택 없이도 예상 인정 학점을 확인할 수 있습니다.</p>;
+
+  return <div className="max-w-[660px] text-ink">
+    <label htmlFor={`home-course-search-${recognitionType}`} className="mb-2 block text-[17px] font-semibold">본교 과목명 검색 (선택)</label>
+    <div className="flex gap-2">
+      <input id={`home-course-search-${recognitionType}`} className={inputClass}
+        value={query} maxLength={50} placeholder="본교 과목명 검색"
+        onChange={(e) => { setQuery(e.target.value); setResults([]); setHasSearched(false); setSearchError(''); if (value) onChange(''); setSelected(null); }}
+        onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void search(); } }} />
+      <button type="button" className={outlineButtonClass} disabled={isSearching} onClick={() => void search()}>{isSearching ? '검색 중...' : '검색'}</button>
+    </div>
+    {searchError && <p role="alert" className="mt-2 text-sm text-danger">{searchError}</p>}
+    {hasSearched && !searchError && <div className="mt-2 max-h-[210px] overflow-y-auto rounded-[10px] border border-line bg-white p-2" role="listbox" aria-label="본교 과목 검색 결과">
+      {results.length ? results.map((course) => <button type="button" role="option" aria-selected={value === String(course.homeCourseId)} key={course.homeCourseId}
+        onClick={() => { onChange(String(course.homeCourseId)); setSelected(course); setQuery(course.name); setHasSearched(false); }}
+        className="block w-full rounded-[7px] px-3 py-2 text-left text-[15px] hover:bg-primary-soft">
+        {course.name} <span className="ml-1 text-xs text-ink-muted">{course.code} · {course.credit}학점 · {LABELS[course.category]}</span>
+      </button>) : <p className="px-3 py-3 text-sm text-ink-muted">검색 결과가 없습니다.</p>}
+    </div>}
+    <div className="mt-2 flex flex-wrap items-center gap-3">
+      <p className="text-xs text-ink-muted">{selected ? `선택: ${selected.name} (${selected.code}, ${selected.credit}학점)` : value ? `선택된 본교 과목 ID ${value}` : '선택하지 않으면 본교 과목을 연결하지 않습니다.'}</p>
+      {value && <button type="button" className="text-sm font-semibold text-primary underline" onClick={() => { onChange(''); setQuery(''); setSelected(null); setResults([]); setHasSearched(false); }}>선택 해제</button>}
+    </div>
+  </div>;
+}
+
 
 export default function PlanEditPage() {
   const navigate = useNavigate();
@@ -86,18 +171,19 @@ export default function PlanEditPage() {
         const stored = isMock
           ? readMockStudyPlans().find((entry) => entry.studyPlanId === Number(planId))
           : undefined;
-        if (isMock && !stored) throw new Error('Mock 계획을 찾을 수 없습니다. 목록에서 새 계획을 만들어 주세요.');
-        const result: PlanDetail = isMock && stored
+        if (isMock && !stored) throw new Error('수강계획을 찾을 수 없습니다. 목록에서 다시 선택해 주세요.');
+        const calculatedMock = stored ? calculateMockPlan(stored) : undefined;
+        const result: PlanDetail = isMock && calculatedMock
           ? {
-              studyPlanId: stored.studyPlanId,
-              name: stored.name,
-              universityId: stored.universityId,
-              universityName: stored.universityName,
-              calculation: { status: 'NOT_CALCULABLE', rule: null, reasonCode: 'MOCK_DATA' },
-              items: stored.items,
-              totalExpectedCredit: null,
-              semesterCreditLimit: null,
-              semesterCreditLimitWarning: false,
+              studyPlanId: calculatedMock.studyPlanId,
+              name: calculatedMock.name,
+              universityId: calculatedMock.universityId,
+              universityName: calculatedMock.universityName,
+              calculation: { status: (calculatedMock.mockCalculationRule ? 'CALCULABLE' : 'NOT_CALCULABLE'), rule: calculatedMock.mockCalculationRule ?? null, reasonCode: calculatedMock.mockCalculationRule ? null : 'MOCK_UNVERIFIED' },
+              items: calculatedMock.items,
+              totalExpectedCredit: getMockTotalExpectedCredit(calculatedMock),
+              semesterCreditLimit: MOCK_SEMESTER_LIMIT,
+              semesterCreditLimitWarning: (getMockTotalExpectedCredit(calculatedMock) ?? 0) > MOCK_SEMESTER_LIMIT,
             }
           : await api<PlanDetail>(`/study-plans/${planId}`);
         if (!active) return;
@@ -133,7 +219,7 @@ export default function PlanEditPage() {
       if (stored) saveMockStudyPlan({ ...stored, name, updatedAt: new Date().toISOString() });
       setPlan((previous) => previous ? { ...previous, name } : previous);
       setPlanName(name);
-      setRenameMessage('Mock 모드: 이름이 미리보기에 반영되었습니다. 서버에는 저장되지 않습니다.');
+      setRenameMessage('계획 이름을 수정했습니다.');
       return;
     }
     try {
@@ -187,12 +273,9 @@ export default function PlanEditPage() {
         updatedAt: new Date().toISOString(),
         items: stored.items.map((item) => item.itemId === editingItemId ? { ...item, ...changes } : item),
       });
-      setPlan((current) => current ? {
-        ...current,
-        items: current.items.map((item) => item.itemId === editingItemId ? { ...item, ...changes } : item),
-      } : current);
+      setReloadKey((key) => key + 1);
       setEditingItemId(null);
-      setMessage('Mock 모드: 화면에서만 과목을 수정했습니다. 서버에는 저장되지 않습니다.');
+      setMessage('과목 정보를 수정했습니다.');
       return;
     }
 
@@ -217,11 +300,8 @@ export default function PlanEditPage() {
     if (isMock) {
       const stored = readMockStudyPlans().find((entry) => entry.studyPlanId === plan.studyPlanId);
       if (stored) saveMockStudyPlan({ ...stored, updatedAt: new Date().toISOString(), items: stored.items.filter((item) => item.itemId !== itemId) });
-      setPlan((current) => current ? {
-        ...current,
-        items: current.items.filter((item) => item.itemId !== itemId),
-      } : current);
-      setMessage('Mock 모드: 화면에서만 과목을 삭제했습니다. 서버에는 반영되지 않습니다.');
+      setReloadKey((key) => key + 1);
+      setMessage('과목을 삭제했습니다.');
       return;
     }
     setDeletingItemId(itemId);
@@ -261,21 +341,21 @@ export default function PlanEditPage() {
     setMessage('');
     if (isMock) {
       const newItem: MockPlanItem = {
-        itemId: Date.now(), itemType: 'CUSTOM', courseName: trimmedName,
+        itemId: Date.now(), itemType: 'DIRECT', courseName: trimmedName,
         foreignCredit: credits, sourceCourseId: null, homeCourseId,
         recognitionType, expectedCredit: null, creditLimitWarning: false,
       };
       const stored = readMockStudyPlans().find((entry) => entry.studyPlanId === plan.studyPlanId);
       if (stored) saveMockStudyPlan({ ...stored, updatedAt: new Date().toISOString(), items: [...stored.items, newItem] });
-      setPlan((current) => current ? { ...current, items: [...current.items, newItem] } : current);
+      setReloadKey((key) => key + 1);
       setCourseName(''); setForeignCredits(''); setHomeCourse('');
-      setMessage('Mock 모드: 과목을 화면에만 추가했습니다. 서버에 저장되지 않습니다.');
+      setMessage('과목을 추가했습니다.');
       return;
     }
 
     try {
       await addItemMutation.mutateAsync({
-        itemType: 'CUSTOM',
+        itemType: 'CUSTOM', // 과목 추가 API의 요청 enum은 별도 명세 확인 전까지 유지
         courseName: trimmedName,
         foreignCredit: credits,
         sourceCourseId: null,
@@ -353,7 +433,7 @@ export default function PlanEditPage() {
                     <td className="break-words px-3 py-4">{item.courseName}</td><td className="px-3 py-4">{item.foreignCredit ?? '-'}</td>
                     <td className="px-3 py-4">{item.expectedCredit ?? '-'}{item.creditLimitWarning && <span className="ml-2 text-danger">한도 초과</span>}</td>
                     <td className="px-3 py-4">{LABELS[item.recognitionType] ?? '확인 필요'}</td>
-                    <td className="break-words px-3 py-4">{item.homeCourseId === null ? '-' : `본교 과목 ID ${item.homeCourseId}`}</td>
+                    <td className="break-words px-3 py-4">{item.homeCourseId === null ? '-' : formatHomeCourse(item.homeCourseId)}</td>
                     <td className="px-2 py-3"><div className="flex flex-wrap gap-2"><button type="button" className={outlineButtonClass} onClick={() => openCourseEdit(item)}>수정</button><button type="button" className={`${outlineButtonClass} disabled:cursor-not-allowed disabled:opacity-50`} disabled={deleteItemMutation.isPending || updateItemMutation.isPending} onClick={() => void handleDeleteCourse(item.itemId)}>{deletingItemId === item.itemId ? '삭제 중...' : '삭제'}</button></div></td>
                   </tr>)}
                   {demoItems.map((item) => <tr key={item.id} className="border-b border-line">
@@ -378,10 +458,13 @@ export default function PlanEditPage() {
                   외국 학점
                   <input className={inputClass} type="number" min="0.1" max="99.9" step="0.1" value={editCredits} onChange={(event) => setEditCredits(event.target.value)} />
                 </label>
-                <label className="flex flex-col gap-2 text-[17px] font-semibold text-ink">
-                  본교 과목 ID (선택)
-                  <input className={inputClass} inputMode="numeric" value={editHomeCourseId} onChange={(event) => setEditHomeCourseId(event.target.value)} placeholder="비우면 본교 과목 연결 해제" />
-                </label>
+                <HomeCourseField
+                  key={`edit-${editingItemId}-${plan.items.find((item) => item.itemId === editingItemId)?.recognitionType}`}
+                  isMock={isMock}
+                  recognitionType={plan.items.find((item) => item.itemId === editingItemId)?.recognitionType ?? 'MAJOR_ELECTIVE'}
+                  value={editHomeCourseId}
+                  onChange={setEditHomeCourseId}
+                />
               </div>
               {editMessage && <p role="alert" className="mt-3 text-sm text-danger">{editMessage}</p>}
               <div className="mt-5 flex flex-wrap gap-3">
@@ -393,32 +476,32 @@ export default function PlanEditPage() {
 
           <section className="mb-6 rounded-[18px] border border-line bg-white px-5 py-7">
             <h2 className="mb-3 text-[25px] font-semibold text-ink">직접 입력</h2>
-            <p className="mb-6 text-sm text-ink-muted">{isMock ? 'Mock 모드에서는 화면 테스트용이며 서버에 저장되지 않습니다.' : '직접 입력 과목은 CUSTOM 유형으로 서버에 저장됩니다.'}</p>
+
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1.8fr)]">
               <label className="flex min-w-0 flex-col gap-3 text-[17px] font-semibold text-ink">교과목명<input className={inputClass} value={courseName} onChange={(event) => setCourseName(event.target.value)} placeholder="교과목명" /></label>
               <label className="flex min-w-0 flex-col gap-3 text-[17px] font-semibold text-ink">외국 학점<input className={inputClass} type="number" min="0.1" step="0.1" value={foreignCredits} onChange={(event) => setForeignCredits(event.target.value)} placeholder="예: 3" /></label>
               <fieldset className="min-w-0"><legend className="mb-3 text-[17px] font-semibold text-ink">인정 구분</legend><div className="flex flex-wrap gap-2">
-                {(['MAJOR_REQUIRED', 'MAJOR_ELECTIVE', 'GENERAL'] as const).map((type) => <label key={type} className={`inline-flex min-h-[50px] cursor-pointer items-center gap-2 rounded-[7px] border px-4 text-[17px] ${recognitionType === type ? 'border-primary bg-primary-soft' : 'border-line bg-white'}`}><input type="radio" name="recognitionType" checked={recognitionType === type} onChange={() => setRecognitionType(type)}/>{LABELS[type]}</label>)}
+                {(['MAJOR_REQUIRED', 'MAJOR_ELECTIVE', 'GENERAL'] as const).map((type) => <label key={type} className={`inline-flex min-h-[50px] cursor-pointer items-center gap-2 rounded-[7px] border px-4 text-[17px] ${recognitionType === type ? 'border-primary bg-primary-soft' : 'border-line bg-white'}`}><input type="radio" name="recognitionType" checked={recognitionType === type} onChange={() => { setRecognitionType(type); setHomeCourse(''); }}/>{LABELS[type]}</label>)}
               </div></fieldset>
             </div>
-            <label className="mt-7 flex max-w-[660px] flex-col gap-3 text-[17px] font-semibold text-ink">본교 과목 ID (선택)<input className={inputClass} inputMode="numeric" value={homeCourse} onChange={(event) => setHomeCourse(event.target.value)} placeholder="예: 16 (없으면 비워두세요)" /></label>
+            <div className="mt-7">
+              <HomeCourseField key={`create-${recognitionType}`} isMock={isMock} recognitionType={recognitionType} value={homeCourse} onChange={setHomeCourse} />
+            </div>
             <button type="button" className={`mt-7 ${outlineButtonClass} disabled:cursor-not-allowed disabled:opacity-50`} onClick={() => void handleAddCourse()} disabled={addItemMutation.isPending}>{addItemMutation.isPending ? '추가 중...' : '과목 추가'}</button>
             {message && <p role="status" className="mt-4 text-sm text-ink-sub">{message}</p>}
           </section>
 
           <section className="rounded-[16px] border border-line bg-primary-soft px-6 py-6">
-            <h2 className="mb-4 text-[22px] font-semibold text-ink">학점 계산 및 인정 기준</h2>
-            <p className="mb-3 text-[17px] text-ink">계산 규칙: {plan.calculation.rule === 'ECTS_X0_6' ? 'ECTS 환산 (정확한 비율은 서버 정책 적용)' : plan.calculation.rule === 'AS_IS' ? '외국 학점 그대로 인정' : '계산 불가'}</p>
-            <p className="mb-3 text-[17px] text-ink-muted">과목별 인정 학점 및 경고는 서버 조회 결과를 사용합니다.</p>
-            {plan.semesterCreditLimitWarning && <p role="alert" className="mb-3 font-semibold text-danger">학기당 예상 인정 학점 한도를 초과했습니다.</p>}
-            <p className="text-[17px] text-ink-muted">참고용 예상치입니다. 최종 인정 학점은 소속 학과 확인이 필요합니다.</p>
+            <h2 className="mb-5 text-[22px] font-semibold text-ink">학점 계산 및 인정 기준</h2>
+            <p className="mb-5 text-[16px] text-ink">인증교 ECTS: 외국 학점 × 적용 환산율　·　US_STYLE: 외국 학점 그대로 적용</p>
+            <p className="mb-4 text-[15px] text-ink-muted">전필·전선은 본교 과목을 지정해야 계산 가능하며, 교양은 지정하지 않아도 됩니다. 계산 불가 과목은 합계에서 제외됩니다.</p>
+            <p className="text-[15px] text-ink-muted">학점 상한을 초과해도 계산값은 유지하고 경고를 표시합니다. 실제 한도는 적용 정책에 따라 달라집니다.</p>
           </section>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-ink-muted">아래 저장 버튼은 아직 서버에 연결되지 않았습니다. 과목 추가·수정·삭제는 각각의 버튼에서 처리됩니다.</p>
-            <button type="button" onClick={() => setMessage('저장 API가 연결되지 않았습니다. 현재 변경사항은 서버에 저장되지 않습니다.')} className="min-h-[49px] min-w-[140px] rounded-[10px] bg-primary px-6 text-[17px] font-semibold text-white hover:opacity-90">저장</button>
-          </div>
+          <p className="mt-5 px-2 text-[15px] text-ink-muted">경영대학 내규 기준 계산이며 소속 학과 기준과 다를 수 있음</p>
+
         </>}
       </div>
+
     </div>
   );
 }
