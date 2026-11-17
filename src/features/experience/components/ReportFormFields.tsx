@@ -5,7 +5,7 @@ import Button from '@/shared/ui/Button';
 import Icon from '@/shared/ui/Icon';
 import Input from '@/shared/ui/Input';
 import Segment from '@/shared/ui/Segment';
-import { emptyCourse, type CourseRow, type ReportForm } from '../mock';
+import { emptyCourse, type CourseRow, type ReportForm } from '../model';
 
 const HOUSING: { value: HousingType; label: string }[] = [
   { value: 'DORM', label: '기숙사' },
@@ -214,7 +214,8 @@ export default function ReportFormFields({
                     <Input
                       size="sm"
                       className="w-[150px]"
-                      placeholder="입력"
+                      placeholder="예: 6"
+                      inputMode="decimal"
                       aria-label="외국 학점"
                       value={c.credits}
                       onChange={(e) => setCourse(c.key, { credits: e.target.value })}

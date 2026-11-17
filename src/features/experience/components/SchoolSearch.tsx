@@ -1,4 +1,5 @@
-import { searchSchools, type SchoolOption } from '../mock';
+import { searchUniversities } from '@/shared/api/universities';
+import type { SchoolOption } from '../model';
 import SearchSelect from './SearchSelect';
 
 export default function SchoolSearch({
@@ -12,8 +13,7 @@ export default function SchoolSearch({
     <SearchSelect
       value={value}
       onChange={onChange}
-      // TODO: /universities/search 연결 (입력 멈춘 뒤 요청)
-      search={searchSchools}
+      search={(q) => (q.trim() ? searchUniversities(q) : [])}
       getKey={(s) => s.universityId}
       getLabel={(s) => `${s.name} (${s.country})`}
       renderOption={(s) => (

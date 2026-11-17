@@ -9,7 +9,7 @@ import Icon from '@/shared/ui/Icon';
 import Input from '@/shared/ui/Input';
 import Segment from '@/shared/ui/Segment';
 import Select from '@/shared/ui/Select';
-import { MAX_NOTE_LENGTH, MY_CONDITION, type SpecForm } from '../mock';
+import type { SpecCondition, SpecForm } from '../model';
 
 const RESULTS = (['PASS', 'FAIL'] as AdmissionResult[]).map((value) => ({
   value,
@@ -39,17 +39,15 @@ function Hint({ icon = 'info', children }: { icon?: 'info' | 'lock'; children: s
   );
 }
 
-export type SpecCondition = typeof MY_CONDITION;
-
 // condition: 수정 폼에서는 등록 당시 값
 export default function SpecFormFields({
   value,
   onChange,
-  condition = MY_CONDITION,
+  condition,
 }: {
   value: SpecForm;
   onChange: (value: SpecForm) => void;
-  condition?: SpecCondition;
+  condition: SpecCondition;
 }) {
   const set = <K extends keyof SpecForm>(key: K, v: SpecForm[K]) =>
     onChange({ ...value, [key]: v });
@@ -91,7 +89,7 @@ export default function SpecFormFields({
           <Input
             aria-label="누적 학점"
             disabled
-            value={`${condition.gpa.toFixed(1)} / 4.5`}
+            value={condition.gpa != null ? `${condition.gpa.toFixed(2)} / 4.5` : '-'}
             readOnly
           />
           <Hint icon="lock">자동 입력 · 수정 불가</Hint>
@@ -100,23 +98,12 @@ export default function SpecFormFields({
           <Input
             aria-label="전공 구분"
             disabled
-            value={MAJOR_TYPE_LABEL[condition.majorType]}
+            value={condition.majorType ? MAJOR_TYPE_LABEL[condition.majorType] : '-'}
             readOnly
           />
           <Hint icon="lock">마이페이지 정보 자동 표시 · 수정 불가</Hint>
         </Field>
       </div>
-
-      <Field label="비고" hint="선택">
-        <Input
-          aria-label="비고"
-          placeholder="예: 교환 동아리 활동, 면접 있음"
-          maxLength={MAX_NOTE_LENGTH}
-          value={value.note}
-          onChange={(e) => set('note', e.target.value)}
-          unit={`${value.note.length} / ${MAX_NOTE_LENGTH}`}
-        />
-      </Field>
     </div>
   );
 }

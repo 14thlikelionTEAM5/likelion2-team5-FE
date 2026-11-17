@@ -12,6 +12,7 @@ export default function ReportPaste({
   canExtract,
   onExtract,
   onManual,
+  error,
 }: {
   text: string;
   onText: (v: string) => void;
@@ -21,6 +22,7 @@ export default function ReportPaste({
   canExtract: boolean;
   onExtract: () => void;
   onManual: () => void;
+  error?: string;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -43,6 +45,14 @@ export default function ReportPaste({
           직접 입력으로 전환
         </Button>
         <div className="flex-1" />
+        {extracting && (
+          <span className="text-ink-muted text-[16px]">
+            AI가 읽는 중이에요. 10~40초 걸릴 수 있어요
+          </span>
+        )}
+        {!extracting && error && (
+          <span className="text-danger text-[16px] font-medium">{error}</span>
+        )}
         <Button icon="sparkle" onClick={onExtract} disabled={!canExtract || extracting}>
           {extracting ? '항목 추출 중…' : '항목 추출하기'}
         </Button>

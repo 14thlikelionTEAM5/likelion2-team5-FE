@@ -1,9 +1,16 @@
 import { useState } from 'react';
+import { ApiError } from '@/shared/api/client';
+import {
+  deleteAdmissionReport,
+  deleteCourseCase,
+  deleteReturnReport,
+  useExperienceMutation,
+  useMyExperiences,
+} from '@/shared/api/experiences';
 import { useNavigate } from 'react-router';
 import { PATHS, type ExperienceKind } from '@/app/paths';
 import { CREDIT_TYPE } from '@/features/schools/components/CoursesTab';
-import { LANGUAGE_EXAMS } from '@/features/schools/components/SchoolFilterCard';
-import { ADMISSION_RESULT_LABEL, MAJOR_TYPE_LABEL } from '@/shared/types/enums';
+import { ADMISSION_RESULT_LABEL, languageTestLabel, MAJOR_TYPE_LABEL } from '@/shared/types/enums';
 import Badge from '@/shared/ui/Badge';
 import Breadcrumb from '@/shared/ui/Breadcrumb';
 import Button from '@/shared/ui/Button';
@@ -12,16 +19,20 @@ import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Table from '@/shared/ui/Table';
 import DeleteModal from '../components/DeleteModal';
 import MySection from '../components/MySection';
-import { deleteExperience, getMyExperiences, getSchoolOption, reportFields } from '../mock';
+import { reportFields, toMyExperiences } from '../model';
 
-const schoolName = (id: number) => getSchoolOption(id)?.name ?? '-';
 const term = (e: { year: number; semester: number }) => `${e.year}-${e.semester}학기`;
-const examLabel = (v: string) => LANGUAGE_EXAMS.find((e) => e.value === v)?.label ?? v;
+
+const DELETE = {
+  spec: deleteAdmissionReport,
+  report: deleteReturnReport,
+  credit: deleteCourseCase,
+};
 
 export default function ExperienceMinePage() {
   const navigate = useNavigate();
-  // TODO: /experiences/me 연결
-  const [mine, setMine] = useState(getMyExperiences);
+  const { data, isPending, isError } = useMyExperiences();
+  const mine = data ? toMyExperiences(data) : { spec: [], report: [], credit: [] };
   const [target, setTarget] = useState<{ kind: ExperienceKind; id: number } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -29,12 +40,19 @@ export default function ExperienceMinePage() {
   const linkedCount =
     target?.kind === 'report' ? mine.credit.filter((c) => c.reportId === target.id).length : 0;
 
+  // 귀국보고서를 지우면 그 보고서로 등록한 인정 사례도 서버에서 같이 지워짐
+  const remove = useExperienceMutation((t: { kind: ExperienceKind; id: number }) =>
+    DELETE[t.kind](t.id),
+  );
   const onDelete = () => {
     if (!target) return;
-    // TODO: DELETE /experiences/{kind}/{id}
-    deleteExperience(target.kind, target.id);
-    setMine(getMyExperiences());
-    setDeleteOpen(false);
+    remove.mutate(target, {
+      onSuccess: () => setDeleteOpen(false),
+      onError: (e) => {
+        setDeleteOpen(false);
+        window.alert(e instanceof ApiError ? e.message : '삭제하지 못했어요');
+      },
+    });
   };
 
   const manage = (kind: ExperienceKind) => ({
@@ -83,7 +101,14 @@ export default function ExperienceMinePage() {
         </header>
       </StaggerItem>
 
-      {total === 0 ? (
+      {isPending ? (
+        <p className="text-ink-muted py-16 text-center text-[19px]">불러오는 중이에요</p>
+      ) : isError ? (
+        <EmptyState
+          title="내 등록 내역을 불러오지 못했어요"
+          description="잠시 후 다시 시도해 주세요."
+        />
+      ) : total === 0 ? (
         <StaggerItem>
           <EmptyState
             title="아직 등록한 경험이 없어요"
@@ -120,9 +145,7 @@ export default function ExperienceMinePage() {
                   {
                     key: 'school',
                     header: '교환교',
-                    render: (e) => (
-                      <span className="font-medium">{schoolName(e.universityId)}</span>
-                    ),
+                    render: (e) => <span className="font-medium">{e.universityName}</span>,
                   },
                   { key: 'term', header: '학기', width: 160, render: term },
                   {
@@ -130,13 +153,15 @@ export default function ExperienceMinePage() {
                     header: '어학',
                     width: 170,
                     render: (e) =>
-                      `${examLabel(e.exam)} ${e.exam === 'IELTS' ? e.score.toFixed(1) : e.score}`,
+                      e.exam && e.score != null
+                        ? `${languageTestLabel(e.exam)} ${e.exam === 'IELTS' ? e.score.toFixed(1) : e.score}`
+                        : '-',
                   },
                   {
                     key: 'gpa',
                     header: '누적 학점',
                     width: 150,
-                    render: (e) => `${e.gpa.toFixed(1)} / 4.5`,
+                    render: (e) => `${e.gpa.toFixed(2)} / 4.5`,
                   },
                   {
                     key: 'major',
@@ -166,9 +191,7 @@ export default function ExperienceMinePage() {
                     key: 'school',
                     header: '교환교',
                     width: 280,
-                    render: (e) => (
-                      <span className="font-medium">{schoolName(e.universityId)}</span>
-                    ),
+                    render: (e) => <span className="font-medium">{e.universityName}</span>,
                   },
                   { key: 'term', header: '학기', width: 160, render: term },
                   {
@@ -208,9 +231,7 @@ export default function ExperienceMinePage() {
                     key: 'school',
                     header: '교환교',
                     width: 260,
-                    render: (e) => (
-                      <span className="font-medium">{schoolName(e.universityId)}</span>
-                    ),
+                    render: (e) => <span className="font-medium">{e.universityName}</span>,
                   },
                   { key: 'term', header: '학기', width: 150, render: term },
                   {
