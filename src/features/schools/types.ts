@@ -216,14 +216,12 @@ export type Course = {
   hasCase: boolean;
 };
 
-const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-
-export const toCourse = (c: UniversityCourse, cases: UniversityCourseCase[]): Course => ({
+export const toCourse = (c: UniversityCourse): Course => ({
   courseId: c.courseId,
-  name: c.courseNameEn,
+  name: c.courseName,
   code: c.courseCode ?? '-',
   credits: c.foreignCredit,
-  hasCase: cases.some((cc) => sameName(cc.foreignCourseName, c.courseNameEn)),
+  hasCase: c.hasRecognition,
 });
 
 export type CourseCase = {

@@ -166,9 +166,9 @@ export const useUniversityReturnReports = (universityId: number) =>
 export type UniversityCourse = {
   courseId: number;
   courseCode: string | null;
-  courseNameEn: string;
+  courseName: string;
   foreignCredit: number | null;
-  satisfaction: number | null;
+  hasRecognition: boolean;
 };
 
 export const useUniversityCourses = (universityId: number) =>

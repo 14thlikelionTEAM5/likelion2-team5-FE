@@ -106,7 +106,7 @@ export default function SchoolDetailPage() {
           key={tab}
           universityId={school.universityId}
           studyPlanId={detail.data.studyPlanId}
-          courses={(courses.data ?? []).map((c) => toCourse(c, caseRows))}
+          courses={(courses.data ?? []).map(toCourse)}
           cases={caseRows.map(toCourseCase)}
         />
       ) : (
