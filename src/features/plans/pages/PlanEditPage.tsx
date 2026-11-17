@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
-import { useAddStudyPlanItem, useDeleteStudyPlanItem, useRenameStudyPlan } from '@/shared/api/studyPlans';
+import { useAddStudyPlanItem, useDeleteStudyPlanItem, useRenameStudyPlan, useUpdateStudyPlanItem } from '@/shared/api/studyPlans';
 
 type RecognitionType = 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
 type PlanItem = {
@@ -56,6 +56,11 @@ export default function PlanEditPage() {
   const addItemMutation = useAddStudyPlanItem(Number(planId));
   const deleteItemMutation = useDeleteStudyPlanItem(Number(planId));
   const [deletingItemId, setDeletingItemId] = useState<number | null>(null);
+  const updateItemMutation = useUpdateStudyPlanItem();
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editCredits, setEditCredits] = useState('');
+  const [editHomeCourseId, setEditHomeCourseId] = useState('');
+  const [editMessage, setEditMessage] = useState('');
   const isMock = import.meta.env.VITE_USE_MOCK === 'true';
 
   useEffect(() => {
@@ -67,6 +72,8 @@ export default function PlanEditPage() {
       setPlanName('');
       setRenameMessage('');
       setDemoItems([]);
+      setEditingItemId(null);
+      setEditMessage('');
       if (!planId || !/^[1-9]\d*$/.test(planId)) {
         setError('유효한 수강계획 ID가 아닙니다.');
         setIsLoading(false);
@@ -122,6 +129,64 @@ export default function PlanEditPage() {
       setRenameMessage('계획 이름을 수정했습니다.');
     } catch (err) {
       setRenameMessage(err instanceof Error ? err.message : '계획 이름 수정에 실패했습니다.');
+    }
+  };
+
+  const openCourseEdit = (item: PlanItem) => {
+    setEditingItemId(item.itemId);
+    setEditCredits(item.foreignCredit === null ? '' : String(item.foreignCredit));
+    setEditHomeCourseId(item.homeCourseId === null ? '' : String(item.homeCourseId));
+    setEditMessage('');
+  };
+
+  const handleUpdateCourse = async () => {
+    if (!plan || editingItemId === null || updateItemMutation.isPending) return;
+    const original = plan.items.find((item) => item.itemId === editingItemId);
+    if (!original) return;
+
+    const rawCredits = editCredits.trim();
+    const creditNumber = Number(rawCredits);
+    if (!/^\d{1,2}(?:\.\d)?$/.test(rawCredits) || creditNumber <= 0 || creditNumber > 99.9) {
+      setEditMessage('외국 학점은 0.1~99.9 사이이며 소수 첫째 자리까지만 입력할 수 있습니다.');
+      return;
+    }
+    const rawHomeId = editHomeCourseId.trim();
+    const homeId = rawHomeId ? Number(rawHomeId) : null;
+    if (homeId !== null && (!/^\d+$/.test(rawHomeId) || !Number.isSafeInteger(homeId) || homeId <= 0)) {
+      setEditMessage('본교 과목 ID는 양의 정수로 입력하거나 비워 주세요.');
+      return;
+    }
+
+    const changes: { foreignCredit?: number; homeCourseId?: number | null } = {};
+    if (creditNumber !== original.foreignCredit) changes.foreignCredit = creditNumber;
+    if (homeId !== original.homeCourseId) changes.homeCourseId = homeId;
+    if (!Object.keys(changes).length) {
+      setEditMessage('변경된 내용이 없습니다.');
+      return;
+    }
+
+    setEditMessage('');
+    if (isMock) {
+      setPlan((current) => current ? {
+        ...current,
+        items: current.items.map((item) => item.itemId === editingItemId ? { ...item, ...changes } : item),
+      } : current);
+      setEditingItemId(null);
+      setMessage('Mock 모드: 화면에서만 과목을 수정했습니다. 서버에는 저장되지 않습니다.');
+      return;
+    }
+
+    try {
+      await updateItemMutation.mutateAsync({
+        studyPlanId: plan.studyPlanId,
+        itemId: editingItemId,
+        changes,
+      });
+      setEditingItemId(null);
+      setMessage('과목을 수정했습니다. 학점을 다시 계산합니다.');
+      setReloadKey((key) => key + 1);
+    } catch (err) {
+      setEditMessage(err instanceof Error ? err.message : '과목 수정에 실패했습니다.');
     }
   };
 
@@ -256,14 +321,14 @@ export default function PlanEditPage() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[850px] table-fixed text-left text-[16px] text-ink">
                 <colgroup><col className="w-[26%]"/><col className="w-[14%]"/><col className="w-[14%]"/><col className="w-[16%]"/><col className="w-[22%]"/><col className="w-[8%]"/></colgroup>
-                <thead className="bg-panel text-[17px] font-semibold"><tr><th className="px-3 py-3">교과목</th><th className="px-3 py-3">외국 학점</th><th className="px-3 py-3">인정 학점</th><th className="px-3 py-3">인정 구분</th><th className="px-3 py-3">본교 과목</th><th className="px-2 py-3"><span className="sr-only">삭제</span></th></tr></thead>
+                <thead className="bg-panel text-[17px] font-semibold"><tr><th className="px-3 py-3">교과목</th><th className="px-3 py-3">외국 학점</th><th className="px-3 py-3">인정 학점</th><th className="px-3 py-3">인정 구분</th><th className="px-3 py-3">본교 과목</th><th className="px-2 py-3"><span className="sr-only">수정 및 삭제</span></th></tr></thead>
                 <tbody>
                   {visibleItems.map((item) => <tr key={item.itemId} className="border-b border-line">
                     <td className="break-words px-3 py-4">{item.courseName}</td><td className="px-3 py-4">{item.foreignCredit ?? '-'}</td>
                     <td className="px-3 py-4">{item.expectedCredit ?? '-'}{item.creditLimitWarning && <span className="ml-2 text-danger">한도 초과</span>}</td>
                     <td className="px-3 py-4">{LABELS[item.recognitionType] ?? '확인 필요'}</td>
                     <td className="break-words px-3 py-4">{item.homeCourseId === null ? '-' : `본교 과목 ID ${item.homeCourseId}`}</td>
-                    <td className="px-2 py-3"><button type="button" className={`${outlineButtonClass} disabled:cursor-not-allowed disabled:opacity-50`} disabled={deleteItemMutation.isPending} onClick={() => void handleDeleteCourse(item.itemId)}>{deletingItemId === item.itemId ? '삭제 중...' : '삭제'}</button></td>
+                    <td className="px-2 py-3"><div className="flex flex-wrap gap-2"><button type="button" className={outlineButtonClass} onClick={() => openCourseEdit(item)}>수정</button><button type="button" className={`${outlineButtonClass} disabled:cursor-not-allowed disabled:opacity-50`} disabled={deleteItemMutation.isPending || updateItemMutation.isPending} onClick={() => void handleDeleteCourse(item.itemId)}>{deletingItemId === item.itemId ? '삭제 중...' : '삭제'}</button></div></td>
                   </tr>)}
                   {demoItems.map((item) => <tr key={item.id} className="border-b border-line">
                     <td className="break-words px-3 py-4">{item.name} <span className="text-xs text-ink-muted">(임시)</span></td>
@@ -275,6 +340,30 @@ export default function PlanEditPage() {
               </table>
             </div>
           </section>
+
+          {editingItemId !== null && (
+            <section className="mb-6 rounded-[18px] border border-line bg-white px-5 py-6">
+              <h2 className="mb-3 text-[23px] font-semibold text-ink">과목 수정</h2>
+              <p className="mb-4 text-sm text-ink-muted">
+                {plan.items.find((item) => item.itemId === editingItemId)?.courseName} · 외국 학점과 본교 과목 연결만 수정할 수 있습니다.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-2 text-[17px] font-semibold text-ink">
+                  외국 학점
+                  <input className={inputClass} type="number" min="0.1" max="99.9" step="0.1" value={editCredits} onChange={(event) => setEditCredits(event.target.value)} />
+                </label>
+                <label className="flex flex-col gap-2 text-[17px] font-semibold text-ink">
+                  본교 과목 ID (선택)
+                  <input className={inputClass} inputMode="numeric" value={editHomeCourseId} onChange={(event) => setEditHomeCourseId(event.target.value)} placeholder="비우면 본교 과목 연결 해제" />
+                </label>
+              </div>
+              {editMessage && <p role="alert" className="mt-3 text-sm text-danger">{editMessage}</p>}
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button type="button" className="min-h-[49px] rounded-[10px] bg-primary px-6 text-[17px] font-semibold text-white disabled:opacity-50" onClick={() => void handleUpdateCourse()} disabled={updateItemMutation.isPending}>{updateItemMutation.isPending ? '수정 중...' : '변경사항 저장'}</button>
+                <button type="button" className={outlineButtonClass} onClick={() => { setEditingItemId(null); setEditMessage(''); }} disabled={updateItemMutation.isPending}>취소</button>
+              </div>
+            </section>
+          )}
 
           <section className="mb-6 rounded-[18px] border border-line bg-white px-5 py-7">
             <h2 className="mb-3 text-[25px] font-semibold text-ink">직접 입력</h2>
@@ -299,7 +388,7 @@ export default function PlanEditPage() {
             <p className="text-[17px] text-ink-muted">참고용 예상치입니다. 최종 인정 학점은 소속 학과 확인이 필요합니다.</p>
           </section>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-ink-muted">아래 저장 버튼은 아직 서버에 연결되지 않았습니다. 과목 추가·삭제는 각각의 버튼에서 처리됩니다.</p>
+            <p className="text-sm text-ink-muted">아래 저장 버튼은 아직 서버에 연결되지 않았습니다. 과목 추가·수정·삭제는 각각의 버튼에서 처리됩니다.</p>
             <button type="button" onClick={() => setMessage('저장 API가 연결되지 않았습니다. 현재 변경사항은 서버에 저장되지 않습니다.')} className="min-h-[49px] min-w-[140px] rounded-[10px] bg-primary px-6 text-[17px] font-semibold text-white hover:opacity-90">저장</button>
           </div>
         </>}

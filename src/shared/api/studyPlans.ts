@@ -175,3 +175,43 @@ export const useDeleteStudyPlanItem = (studyPlanId: number) => {
     },
   });
 };
+
+// PATCH - 수강계획 과목 수정 (외국 학점 / 본교 과목 연결만 허용)
+export type UpdateStudyPlanItemChanges = {
+  foreignCredit?: number;
+  homeCourseId?: number | null;
+};
+
+export type UpdateStudyPlanItemRequest = {
+  studyPlanId: number;
+  itemId: number;
+  changes: UpdateStudyPlanItemChanges;
+};
+
+export type UpdateStudyPlanItemResponse = {
+  itemId: number;
+  itemType: 'REGISTERED' | 'CUSTOM';
+  courseName: string;
+  foreignCredit: number;
+  sourceCourseId: number | null;
+  homeCourseId: number | null;
+  recognitionType: 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL' | null;
+  updatedAt: string;
+};
+
+export const updateStudyPlanItem = ({ studyPlanId, itemId, changes }: UpdateStudyPlanItemRequest) =>
+  api<UpdateStudyPlanItemResponse>(`/study-plans/${studyPlanId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: changes,
+  });
+
+export const useUpdateStudyPlanItem = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateStudyPlanItem,
+    onSuccess: (_data, { studyPlanId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['study-plans'] });
+      void queryClient.invalidateQueries({ queryKey: ['study-plans', studyPlanId] });
+    },
+  });
+};
