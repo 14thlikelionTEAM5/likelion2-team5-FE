@@ -15,8 +15,8 @@ export default function MyConditionCard({
   gpa,
   languageScores,
 }: {
-  majorType: MajorType;
-  gpa: number;
+  majorType: MajorType | null;
+  gpa: number | null;
   languageScores: LanguageScore[];
 }) {
   const navigate = useNavigate();
@@ -33,19 +33,19 @@ export default function MyConditionCard({
       <div className="grid gap-4 md:grid-cols-3">
         <Panel className="flex flex-col gap-2.5">
           <Label>전공 구분</Label>
-          <p className="text-[28px] font-bold">{MAJOR_TYPE_LABEL[majorType]}</p>
+          <p className="text-[28px] font-bold">{majorType ? MAJOR_TYPE_LABEL[majorType] : '-'}</p>
         </Panel>
 
         <Panel className="flex flex-col gap-2.5">
           <Label>누적 학점</Label>
           <p className="flex items-end gap-1.5">
-            <span className="text-[28px] font-bold">{gpa.toFixed(1)}</span>
+            <span className="text-[28px] font-bold">{gpa != null ? gpa.toFixed(2) : '-'}</span>
             <span className="text-ink-muted pb-0.5 text-[19px] font-medium">/ {GPA_MAX}</span>
           </p>
           <div className="bg-primary-soft h-2 overflow-hidden rounded-[4px]">
             <div
               className="bg-accent h-full rounded-[4px]"
-              style={{ width: `${Math.min(gpa / GPA_MAX, 1) * 100}%` }}
+              style={{ width: `${Math.min((gpa ?? 0) / GPA_MAX, 1) * 100}%` }}
             />
           </div>
         </Panel>

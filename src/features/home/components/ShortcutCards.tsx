@@ -11,7 +11,7 @@ export type RecentPlan = {
   universityName: string;
   updatedAt: string;
   itemCount: number;
-  expectedCredits: number;
+  expectedCredits: number | null;
 };
 
 export default function ShortcutCards({ recentPlan }: { recentPlan: RecentPlan | null }) {
@@ -42,7 +42,12 @@ export default function ShortcutCards({ recentPlan }: { recentPlan: RecentPlan |
             />
             <div className="flex w-full gap-3">
               <StatBox label="담은 과목" value={`${recentPlan.itemCount}개`} />
-              <StatBox label="예상 인정 학점" value={`${recentPlan.expectedCredits}학점`} />
+              <StatBox
+                label="예상 인정 학점"
+                value={
+                  recentPlan.expectedCredits != null ? `${recentPlan.expectedCredits}학점` : '-'
+                }
+              />
             </div>
           </>
         ) : (
