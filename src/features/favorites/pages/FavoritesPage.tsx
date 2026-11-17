@@ -96,12 +96,6 @@ export default function FavoritesPage() {
             찜페이지
           </h2>
 
-          {import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true' && (
-            <p className="text-caution text-sm" role="status">
-              개발용 임시 데이터 표시 중 · 실제 찜 목록이 아닙니다.
-            </p>
-          )}
-
           <p className="text-ink-muted text-lg font-semibold sm:text-[21px]">
             찜한 학교{' '}
             <span className="text-accent">
