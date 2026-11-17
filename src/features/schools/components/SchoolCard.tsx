@@ -2,13 +2,13 @@ import { useNavigate } from 'react-router';
 import { PATHS } from '@/app/paths';
 import Badge from '@/shared/ui/Badge';
 import Icon from '@/shared/ui/Icon';
-import type { Eligibility, SchoolSummary } from '../mock';
+import type { Eligibility, SchoolSummary } from '../types';
 import BookmarkStar from './BookmarkStar';
 
 const ELIGIBILITY_BADGE = {
   ELIGIBLE: { tone: 'accent', label: '가능' },
-  INELIGIBLE: { tone: 'danger', label: '불가' },
-  UNKNOWN: { tone: 'caution', label: '확인 필요' },
+  NOT_ELIGIBLE: { tone: 'danger', label: '불가' },
+  NEEDS_CHECK: { tone: 'caution', label: '확인 필요' },
 } as const satisfies Record<Eligibility, object>;
 
 const CHANGE_LABEL = { NEW: '신규', QUOTA_CHANGED: '인원 변경' };
@@ -75,14 +75,14 @@ export default function SchoolCard({
                   경험 데이터 있음
                 </span>
               )}
-              {school.eligibility === 'INELIGIBLE' && school.ineligibleReason && (
+              {school.eligibility === 'NOT_ELIGIBLE' && school.eligibilityMessage && (
                 <span className="text-danger text-[16px] font-medium">
-                  불가 사유: {school.ineligibleReason}
+                  불가 사유: {school.eligibilityMessage}
                 </span>
               )}
-              {school.eligibility === 'UNKNOWN' && (
+              {school.eligibility === 'NEEDS_CHECK' && (
                 <span className="text-ink-muted text-[16px] font-medium">
-                  기준 정보가 없어요. 학교 공식 공지를 확인해 주세요
+                  {school.eligibilityMessage ?? '학교 공식 공지를 확인해 주세요'}
                 </span>
               )}
             </div>
@@ -94,9 +94,11 @@ export default function SchoolCard({
         <div className="flex w-full items-center gap-4 sm:w-auto">
           <div className="flex flex-1 shrink-0 flex-col gap-1 sm:items-end">
             <p className="text-ink-sub text-[19px] font-semibold whitespace-nowrap">
-              모집 인원 {school.recruitCount}명
+              모집 인원 {school.recruitCount ?? '-'}명
             </p>
-            <p className="text-ink-muted text-[16px] whitespace-nowrap">기준일 {school.baseDate}</p>
+            <p className="text-ink-muted text-[16px] whitespace-nowrap">
+              기준일 {school.baseDate ?? '-'}
+            </p>
           </div>
           <button
             type="button"

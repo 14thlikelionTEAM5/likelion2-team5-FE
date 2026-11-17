@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PATHS } from '@/app/paths';
 import Breadcrumb from '@/shared/ui/Breadcrumb';
@@ -7,10 +7,17 @@ import Button from '@/shared/ui/Button';
 import Icon from '@/shared/ui/Icon';
 import Select from '@/shared/ui/Select';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import {
+  useToggleUniversityBookmark,
+  useUniversities,
+  useUniversityCountries,
+} from '@/shared/api/universities';
+import type { LanguageTestType } from '@/shared/types/enums';
 import SchoolCard from '../components/SchoolCard';
 import SchoolFilterCard from '../components/SchoolFilterCard';
-import { MOCK_SCHOOLS, type SchoolSummary } from '../mock';
-import { useSchoolFilters, type SchoolFilters, type SchoolSort } from '../useSchoolFilters';
+import { toSchoolSummary, type SchoolSummary } from '../types';
+import { useSchoolFilters, type SchoolSort } from '../useSchoolFilters';
 
 const SORT_OPTIONS: { value: SchoolSort; label: string }[] = [
   { value: 'country', label: '국가·학교명순' },
@@ -18,52 +25,43 @@ const SORT_OPTIONS: { value: SchoolSort; label: string }[] = [
   { value: 'recruit', label: '모집 인원순' },
 ];
 
-// TODO: API 연결 후 필터·정렬은 서버에서 처리
-function applyFilters(list: SchoolSummary[], f: SchoolFilters) {
-  const min = f.minCost ? Number(f.minCost) : null;
-  const max = f.maxCost ? Number(f.maxCost) : null;
-  const q = f.q.trim().toLowerCase();
-
-  const filtered = list.filter(
-    (s) =>
-      (!f.country || s.country === f.country) &&
-      (!q || s.name.toLowerCase().includes(q)) &&
-      (!f.exam || s.languageExams.includes(f.exam)) &&
-      (!f.eligibleOnly || (s.recruiting && s.eligibility === 'ELIGIBLE')) &&
-      (min === null || (s.expectedCost ?? 0) >= min) &&
-      (max === null || (s.expectedCost ?? Infinity) <= max),
-  );
-
-  const byName = (a: SchoolSummary, b: SchoolSummary) => a.name.localeCompare(b.name, 'ko');
-  return filtered.sort((a, b) => {
-    if (a.recruiting !== b.recruiting) return a.recruiting ? -1 : 1;
-    if (f.sort === 'recruit') return b.recruitCount - a.recruitCount || byName(a, b);
-    if (f.sort === 'country') return a.country.localeCompare(b.country, 'ko') || byName(a, b);
-    return byName(a, b);
-  });
+// 모집 중인 학교 먼저. 모집 인원순은 서버 정렬이 없어 화면에서 정렬함
+function sortSchools(list: SchoolSummary[], sort: SchoolSort) {
+  return list
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => {
+      if (a.s.recruiting !== b.s.recruiting) return a.s.recruiting ? -1 : 1;
+      if (sort === 'recruit') return (b.s.recruitCount ?? 0) - (a.s.recruitCount ?? 0) || a.i - b.i;
+      return a.i - b.i;
+    })
+    .map(({ s }) => s);
 }
 
 export default function SchoolListPage() {
   const { filters, setFilter, reset } = useSchoolFilters();
-  const [schools, setSchools] = useState(MOCK_SCHOOLS);
+  const keyword = useDebouncedValue(filters.q.trim());
 
-  const countries = useMemo(
-    () => [...new Set(schools.map((s) => s.country))].sort((a, b) => a.localeCompare(b, 'ko')),
-    [schools],
-  );
-  const result = applyFilters([...schools], filters);
+  const { data, isPending, isError, refetch } = useUniversities({
+    keyword,
+    country: filters.country,
+    languageTest: (filters.exam || undefined) as LanguageTestType | undefined,
+    eligibleOnly: filters.eligibleOnly,
+    sort: filters.sort === 'country' ? 'COUNTRY' : 'NAME',
+  });
+  const { data: countryList } = useUniversityCountries();
+  const countries = countryList?.map((c) => c.country) ?? [];
 
-  // TODO: /bookmarks 연결
-  const toggleBookmark = (id: number) =>
-    setSchools((prev) =>
-      prev.map((s) => (s.universityId === id ? { ...s, bookmarked: !s.bookmarked } : s)),
-    );
+  const result = sortSchools((data?.universities ?? []).map(toSchoolSummary), filters.sort);
+
+  const bookmark = useToggleUniversityBookmark();
+  const toggleBookmark = (s: SchoolSummary) =>
+    bookmark.mutate({ universityId: s.universityId, on: !s.bookmarked });
 
   // 처음 들어올 때만 카드가 차례로 나오고, 필터로 바뀔 때는 바뀐 카드만 움직임
   const firstRender = useRef(true);
   useEffect(() => {
-    firstRender.current = false;
-  }, []);
+    if (data) firstRender.current = false;
+  }, [data]);
 
   return (
     <Stagger className="flex flex-col gap-8">
@@ -110,7 +108,34 @@ export default function SchoolListPage() {
       </StaggerItem>
 
       <AnimatePresence mode="wait">
-        {result.length > 0 ? (
+        {isPending ? (
+          <motion.p
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-ink-muted py-16 text-center text-[19px]"
+          >
+            협정교를 불러오는 중이에요
+          </motion.p>
+        ) : isError ? (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <EmptyState
+              title="협정교를 불러오지 못했어요"
+              description="잠시 후 다시 시도해 주세요."
+              action={
+                <Button variant="secondary" icon="refresh" onClick={() => void refetch()}>
+                  다시 시도
+                </Button>
+              }
+            />
+          </motion.div>
+        ) : result.length > 0 ? (
           <motion.div
             key="list"
             initial={{ opacity: 0 }}
@@ -128,7 +153,7 @@ export default function SchoolListPage() {
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.25, delay: firstRender.current ? 0.18 + i * 0.06 : 0 }}
                 >
-                  <SchoolCard school={s} onToggleBookmark={() => toggleBookmark(s.universityId)} />
+                  <SchoolCard school={s} onToggleBookmark={() => toggleBookmark(s)} />
                 </motion.div>
               ))}
             </AnimatePresence>

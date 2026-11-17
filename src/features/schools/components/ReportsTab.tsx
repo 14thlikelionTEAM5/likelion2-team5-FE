@@ -9,15 +9,15 @@ import EmptyState from '@/shared/ui/EmptyState';
 import Icon, { type IconName } from '@/shared/ui/Icon';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
 import Table from '@/shared/ui/Table';
-import type { HousingType, ReturnReport } from '../mock';
+import { HOUSING_TYPE_LABEL } from '@/shared/types/enums';
+import type { HousingType, ReturnReport } from '../types';
 
 const PREVIEW_COUNT = 3;
 
-const HOUSING: { value: HousingType; label: string }[] = [
-  { value: 'DORM', label: '기숙사' },
-  { value: 'OFF_CAMPUS', label: '자취' },
-  { value: 'OTHER', label: '기타' },
-];
+const HOUSING = (Object.keys(HOUSING_TYPE_LABEL) as HousingType[]).map((value) => ({
+  value,
+  label: HOUSING_TYPE_LABEL[value],
+}));
 
 // 값이 없으면 "-"
 function Raw({ value }: { value?: string }) {
@@ -28,22 +28,8 @@ function Raw({ value }: { value?: string }) {
   );
 }
 
-function SampleTag() {
-  return (
-    <span className="border-line text-ink-muted shrink-0 rounded-[6px] border bg-white px-1.5 text-[13px] font-medium">
-      샘플
-    </span>
-  );
-}
-
-// compact: 좁은 표에서는 샘플 표시 없이 학기만
-function Semester({ report, compact }: { report: ReturnReport; compact?: boolean }) {
-  return (
-    <span className="flex items-center gap-2 font-medium whitespace-nowrap">
-      {report.semester}학기
-      {report.isSample && !compact && <SampleTag />}
-    </span>
-  );
+function Semester({ report }: { report: ReturnReport; compact?: boolean }) {
+  return <span className="font-medium whitespace-nowrap">{report.semester}학기</span>;
 }
 
 function CardHeading({
@@ -262,7 +248,6 @@ export default function ReportsTab({
                 >
                   <span className="flex shrink-0 items-start gap-1.5 sm:flex-col">
                     <Badge>{r.semester}학기</Badge>
-                    {r.isSample && <SampleTag />}
                   </span>
                   <p className="text-ink-sub flex-1 text-[17px] leading-[1.6] sm:text-[19px]">
                     {r.summary}

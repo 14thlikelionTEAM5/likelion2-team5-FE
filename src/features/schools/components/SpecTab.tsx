@@ -12,7 +12,7 @@ import InfoNote from '@/shared/ui/InfoNote';
 import Segment from '@/shared/ui/Segment';
 import Select from '@/shared/ui/Select';
 import { Stagger, StaggerItem } from '@/shared/ui/Stagger';
-import type { AdmissionReport } from '../mock';
+import type { AdmissionReport } from '../types';
 import { LANGUAGE_EXAMS } from './SchoolFilterCard';
 
 type ResultFilter = 'PASS' | 'FAIL' | 'ALL';
@@ -24,7 +24,7 @@ const RESULT_ITEMS: { value: ResultFilter; label: string }[] = [
 ];
 
 const PREVIEW_COUNT = 3;
-const examLabel = (v: string) => LANGUAGE_EXAMS.find((e) => e.value === v)?.label ?? v;
+const examLabel = (v: string | null) => LANGUAGE_EXAMS.find((e) => e.value === v)?.label ?? v ?? '';
 
 export default function SpecTab({
   universityId,
@@ -40,7 +40,7 @@ export default function SpecTab({
 
   const passes = reports.filter((r) => r.result === 'PASS');
   const examsWithPass = LANGUAGE_EXAMS.filter((e) => passes.some((r) => r.exam === e.value));
-  const [exam, setExam] = useState(
+  const [exam, setExam] = useState<string>(
     () =>
       examsWithPass.find((e) => me.scores[e.value] !== undefined)?.value ??
       examsWithPass[0]?.value ??
@@ -68,7 +68,9 @@ export default function SpecTab({
   }
 
   const gpas = passes.map((r) => r.gpa);
-  const examScores = passes.filter((r) => r.exam === exam).map((r) => r.score);
+  const examScores = passes
+    .filter((r) => r.exam === exam && r.score !== null)
+    .map((r) => r.score as number);
   const listed = reports.filter((r) => filter === 'ALL' || r.result === filter);
   const shown = expanded ? listed : listed.slice(0, PREVIEW_COUNT);
 
@@ -149,14 +151,9 @@ export default function SpecTab({
                           {r.semester}학기 · {MAJOR_TYPE_LABEL[r.majorType]} · 학점{' '}
                           {r.gpa.toFixed(1)}
                           /4.5
-                          {r.isSample && (
-                            <span className="border-line text-ink-muted rounded-[6px] border bg-white px-1.5 text-[13px] font-medium">
-                              시연용 샘플
-                            </span>
-                          )}
                         </p>
                         <p className="text-ink-muted text-[16px]">
-                          {examLabel(r.exam)} {r.score} · {r.note ?? '어학 외 비고 없음'}
+                          {r.exam ? `${examLabel(r.exam)} ${r.score ?? '-'}` : '어학 성적 없음'}
                         </p>
                       </div>
                     </motion.div>

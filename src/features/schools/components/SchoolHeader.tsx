@@ -3,7 +3,7 @@ import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import Breadcrumb from '@/shared/ui/Breadcrumb';
 import Icon from '@/shared/ui/Icon';
-import type { SchoolDetail } from '../mock';
+import type { SchoolDetail } from '../types';
 import { lastSchoolListUrl } from '../useSchoolFilters';
 import BookmarkStar from './BookmarkStar';
 
@@ -63,9 +63,12 @@ export default function SchoolHeader({
 
       <div className="flex flex-wrap gap-2">
         <Tag value={school.country} />
-        <Tag label="모집 인원" value={`${school.recruitCount}명`} />
-        <Tag label="교환 기간" value={`${school.exchangeStart} ~ ${school.exchangeEnd}`} />
-        <Tag label="기준일" value={school.baseDate} />
+        <Tag
+          label="모집 인원"
+          value={school.recruitCount != null ? `${school.recruitCount}명` : '-'}
+        />
+        <Tag label="교환 기간" value={school.exchangePeriod ?? '-'} />
+        <Tag label="기준일" value={school.baseDate ?? '-'} />
       </div>
     </section>
   );

@@ -7,8 +7,6 @@ export type SchoolSort = 'country' | 'name' | 'recruit';
 export type SchoolFilters = {
   country: string;
   q: string;
-  minCost: string;
-  maxCost: string;
   exam: string;
   eligibleOnly: boolean;
   sort: SchoolSort;
@@ -41,8 +39,6 @@ export function useSchoolFilters() {
   const filters: SchoolFilters = {
     country: params.get('country') ?? '',
     q: params.get('q') ?? '',
-    minCost: params.get('minCost') ?? '',
-    maxCost: params.get('maxCost') ?? '',
     exam: params.get('exam') ?? '',
     eligibleOnly: params.get('eligibleOnly') === 'true',
     sort: (params.get('sort') as SchoolSort) || 'country',
