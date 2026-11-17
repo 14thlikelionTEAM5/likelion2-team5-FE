@@ -5,6 +5,8 @@ import { PATHS } from '@/app/paths';
 import heroLight from '@/assets/decor/hero-light.svg';
 import { api } from '@/shared/api/client';
 import { useAddStudyPlanItem, useDeleteStudyPlanItem, useRenameStudyPlan, useUpdateStudyPlanItem } from '@/shared/api/studyPlans';
+import { readMockStudyPlans, saveMockStudyPlan } from '../mockStudyPlans';
+import type { MockPlanItem } from '../mockStudyPlans';
 
 type RecognitionType = 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
 type PlanItem = {
@@ -81,15 +83,19 @@ export default function PlanEditPage() {
       }
       try {
         // 개발용 mock 데이터: 실제 API 호출 및 서버 저장을 하지 않음.
-        const result: PlanDetail = isMock
+        const stored = isMock
+          ? readMockStudyPlans().find((entry) => entry.studyPlanId === Number(planId))
+          : undefined;
+        if (isMock && !stored) throw new Error('Mock 계획을 찾을 수 없습니다. 목록에서 새 계획을 만들어 주세요.');
+        const result: PlanDetail = isMock && stored
           ? {
-              studyPlanId: Number(planId),
-              name: '테스트 수강계획',
-              universityId: 1,
-              universityName: '테스트 대학 (Mock)',
+              studyPlanId: stored.studyPlanId,
+              name: stored.name,
+              universityId: stored.universityId,
+              universityName: stored.universityName,
               calculation: { status: 'NOT_CALCULABLE', rule: null, reasonCode: 'MOCK_DATA' },
-              items: [],
-              totalExpectedCredit: 0,
+              items: stored.items,
+              totalExpectedCredit: null,
               semesterCreditLimit: null,
               semesterCreditLimitWarning: false,
             }
@@ -122,6 +128,14 @@ export default function PlanEditPage() {
       return;
     }
     setRenameMessage('');
+    if (isMock) {
+      const stored = readMockStudyPlans().find((entry) => entry.studyPlanId === plan.studyPlanId);
+      if (stored) saveMockStudyPlan({ ...stored, name, updatedAt: new Date().toISOString() });
+      setPlan((previous) => previous ? { ...previous, name } : previous);
+      setPlanName(name);
+      setRenameMessage('Mock 모드: 이름이 미리보기에 반영되었습니다. 서버에는 저장되지 않습니다.');
+      return;
+    }
     try {
       const updated = await renameMutation.mutateAsync({ studyPlanId: plan.studyPlanId, name });
       setPlan((previous) => previous ? { ...previous, name: updated.name } : previous);
@@ -167,6 +181,12 @@ export default function PlanEditPage() {
 
     setEditMessage('');
     if (isMock) {
+      const stored = readMockStudyPlans().find((entry) => entry.studyPlanId === plan.studyPlanId);
+      if (stored) saveMockStudyPlan({
+        ...stored,
+        updatedAt: new Date().toISOString(),
+        items: stored.items.map((item) => item.itemId === editingItemId ? { ...item, ...changes } : item),
+      });
       setPlan((current) => current ? {
         ...current,
         items: current.items.map((item) => item.itemId === editingItemId ? { ...item, ...changes } : item),
@@ -195,6 +215,8 @@ export default function PlanEditPage() {
     if (!plan || deleteItemMutation.isPending) return;
     setMessage('');
     if (isMock) {
+      const stored = readMockStudyPlans().find((entry) => entry.studyPlanId === plan.studyPlanId);
+      if (stored) saveMockStudyPlan({ ...stored, updatedAt: new Date().toISOString(), items: stored.items.filter((item) => item.itemId !== itemId) });
       setPlan((current) => current ? {
         ...current,
         items: current.items.filter((item) => item.itemId !== itemId),
@@ -238,10 +260,14 @@ export default function PlanEditPage() {
 
     setMessage('');
     if (isMock) {
-      setDemoItems((prev) => [...prev, {
-        id: Date.now(), name: trimmedName, credits, recognitionType,
-        homeCourse: homeCourseId === null ? '' : `본교 과목 ID ${homeCourseId}`,
-      }]);
+      const newItem: MockPlanItem = {
+        itemId: Date.now(), itemType: 'CUSTOM', courseName: trimmedName,
+        foreignCredit: credits, sourceCourseId: null, homeCourseId,
+        recognitionType, expectedCredit: null, creditLimitWarning: false,
+      };
+      const stored = readMockStudyPlans().find((entry) => entry.studyPlanId === plan.studyPlanId);
+      if (stored) saveMockStudyPlan({ ...stored, updatedAt: new Date().toISOString(), items: [...stored.items, newItem] });
+      setPlan((current) => current ? { ...current, items: [...current.items, newItem] } : current);
       setCourseName(''); setForeignCredits(''); setHomeCourse('');
       setMessage('Mock 모드: 과목을 화면에만 추가했습니다. 서버에 저장되지 않습니다.');
       return;
