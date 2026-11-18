@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { MajorType } from '@/shared/types/enums';
 import { api } from './client';
+
+export type { MajorType } from '@/shared/types/enums';
 
 export type MyLanguageScore = {
   testType: string;
@@ -66,7 +69,6 @@ export const useCheckNickname = () =>
   useMutation({ mutationFn: checkNickname });
 
 // PATCH /users/me: 전달한 필드만 수정. languageScores는 전달 시 전체 교체.
-export type MajorType = 'PRIMARY' | 'DOUBLE' | 'MINOR';
 export type LanguageTestType = 'TOEFL_IBT' | 'TOEFL_NEW' | 'TOEFL_ITP' | 'IELTS';
 export type UpdateMyProfileRequest = Partial<{
   nickname: string;
