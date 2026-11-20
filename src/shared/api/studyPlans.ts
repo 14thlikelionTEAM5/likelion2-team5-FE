@@ -25,6 +25,7 @@ export type StudyPlanItem = {
   foreignCredit: number | null;
   sourceCourseId: number | null;
   homeCourseId: number | null;
+  homeCourseName: string | null;
   recognitionType:
     | 'MAJOR_REQUIRED'
     | 'MAJOR_ELECTIVE'
