@@ -39,6 +39,53 @@ const RESULT_BADGE = {
 
 const dot = (date: string | null) => (date ? date.replaceAll('-', '.') : '-');
 
+const URL_PATTERN = /(https?:\/\/[^\s)]+)/g;
+
+function LinkedText({ text }: { text: string }) {
+  return text.split(URL_PATTERN).map((part, i) =>
+    i % 2 ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noreferrer"
+        className="text-primary break-all underline"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+}
+
+// • 로 시작하는 줄은 목록, 나머지는 문단
+function SummaryBody({ text }: { text: string }) {
+  const lines = text.split('\n').map((l) => l.trim());
+  const blocks: (string | string[])[] = [];
+  for (const line of lines.filter(Boolean)) {
+    const last = blocks[blocks.length - 1];
+    if (!line.startsWith('•')) blocks.push(line);
+    else if (Array.isArray(last)) last.push(line.replace(/^•\s*/, ''));
+    else blocks.push([line.replace(/^•\s*/, '')]);
+  }
+  return blocks.map((block, i) =>
+    Array.isArray(block) ? (
+      <ul key={i} className="flex list-disc flex-col gap-1 pl-6">
+        {block.map((item, j) => (
+          <li key={j}>
+            <LinkedText text={item} />
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p key={i}>
+        <LinkedText text={block} />
+      </p>
+    ),
+  );
+}
+
 export default function OfficialTab({ info }: { info: OfficialInfo }) {
   const judgment = JUDGMENT_STYLE[info.judgment.result];
 
@@ -63,11 +110,19 @@ export default function OfficialTab({ info }: { info: OfficialInfo }) {
         <StaggerItem>
           <Card title="원문 요약" description="예상 비용 · 혜택 · 비고">
             <div className="flex flex-col gap-5">
-              <Panel className="flex flex-col gap-2.5 text-[19px]">
-                <p className="font-semibold">공식 자료 요약</p>
-                <p className="text-ink-sub leading-[1.6] whitespace-pre-line">
-                  {info.summary ?? '아직 정리된 공식 자료가 없어요.'}
-                </p>
+              <Panel className="flex flex-col gap-5 text-[19px]">
+                {info.summarySections.length ? (
+                  info.summarySections.map((section) => (
+                    <section key={section.title} className="flex flex-col gap-2">
+                      <h3 className="font-semibold">{section.title}</h3>
+                      <div className="text-ink-sub flex flex-col gap-1 leading-[1.6]">
+                        <SummaryBody text={section.body} />
+                      </div>
+                    </section>
+                  ))
+                ) : (
+                  <p className="text-ink-sub">아직 정리된 공식 자료가 없어요.</p>
+                )}
               </Panel>
               <div className="flex flex-wrap items-center gap-2">
                 {info.sourceUrl && (

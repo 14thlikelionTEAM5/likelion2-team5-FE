@@ -95,7 +95,7 @@ export type CriterionResult = 'MET' | 'NOT_MET' | 'UNKNOWN';
 export type OfficialInfo = {
   gpaCriterion?: string;
   languageCriterion?: string;
-  summary?: string;
+  summarySections: { title: string; body: string }[];
   sourceUrl?: string;
   courseListUrl?: string;
   baseDate: string | null;
@@ -158,10 +158,12 @@ export const toOfficialInfo = (d: UniversityDetail, profile?: MyProfile): Offici
   return {
     gpaCriterion: a?.minGpa != null ? `${gpaText(a.minGpa)} 이상` : undefined,
     languageCriterion: reqs.length ? languageText(reqs) : undefined,
-    summary:
-      [a?.costSummary, a?.benefitSummary, a?.remarkSummary, a?.courseRestriction]
-        .filter(Boolean)
-        .join('\n') || undefined,
+    summarySections: [
+      { title: '비용', body: a?.costSummary },
+      { title: '혜택', body: a?.benefitSummary },
+      { title: '비고', body: a?.remarkSummary },
+      { title: '수강 제한', body: a?.courseRestriction },
+    ].filter((s): s is { title: string; body: string } => !!s.body?.trim()),
     sourceUrl: a?.sourceUrl ?? undefined,
     courseListUrl: d.courseListUrl ?? undefined,
     baseDate: a?.announcedAt ?? null,
