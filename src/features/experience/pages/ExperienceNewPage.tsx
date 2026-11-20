@@ -253,7 +253,6 @@ export default function ExperienceNewPage() {
                   setError('');
                 }}
               />
-              <Hint>협정교 상세에서 들어오면 학교가 자동으로 선택돼요</Hint>
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-ink-sub text-[18px] font-semibold">연도</span>
