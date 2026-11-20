@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { PATHS } from '@/app/paths';
+import { conditionSummary } from '@/features/schools/types';
 import { useBookmarks, useRemoveBookmark } from '@/shared/api/bookmarks';
 import Badge from '@/shared/ui/Badge';
 import Button from '@/shared/ui/Button';
@@ -209,10 +210,7 @@ export default function FavoritesPage() {
                     {/* 주요 지원 조건 */}
                     <p className="text-ink-sub text-[18px] leading-relaxed">
                       주요 조건{' '}
-                      {school.minGpa === null ? '학점 기준 미확인' : `학점 ${school.minGpa} 이상`}
-                      {school.languageRequirements?.length
-                        ? ` · ${school.languageRequirements.map((requirement) => `${requirement.testType} ${requirement.minScore}`).join(' / ')}`
-                        : ''}
+                      {conditionSummary(school.minGpa, school.languageRequirements ?? []) ?? '-'}
                     </p>
 
                     {/* 지원 자격 */}
