@@ -40,12 +40,14 @@ export type SchoolSummary = {
 // 3 → 3.0, 3.25 → 3.25
 const gpaText = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
-const languageText = (reqs: LanguageRequirement[]) =>
+type LanguageReq = { testType: string; minScore: number | null };
+
+const languageText = (reqs: LanguageReq[]) =>
   reqs
     .map((r) => `${languageTestLabel(r.testType)}${r.minScore != null ? ` ${r.minScore}` : ''}`)
     .join(' / ');
 
-const conditionSummary = (minGpa: number | null, reqs: LanguageRequirement[]) => {
+export const conditionSummary = (minGpa: number | null, reqs: LanguageReq[]) => {
   const parts = [
     minGpa != null && `학점 ${gpaText(minGpa)} 이상`,
     reqs.length > 0 && `${languageText(reqs)} 이상`,
