@@ -32,6 +32,7 @@ type StudyPlanDetail = {
     recognitionType: 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'GENERAL';
     expectedCredit: number | null;
     homeCourseId: number | null;
+    homeCourseName?: string | null;
   }[];
 };
 
@@ -346,7 +347,7 @@ export default function PlanListPage() {
                           <tr key={item.itemId} className="border-b border-line">
                             <td className="px-3 py-3">{item.courseName}</td>
                             <td className="px-3 py-3">{recognitionLabel[item.recognitionType] ?? '확인 필요'}</td>
-                            <td className="px-3 py-3">{item.homeCourseId === null ? '-' : `본교 과목 ID ${item.homeCourseId}`}</td>
+                            <td className="px-3 py-3">{item.homeCourseName ?? '-'}</td>
                             <td className="px-3 py-3">{item.expectedCredit ?? '-'}</td>
                           </tr>
                         )) : <tr><td colSpan={4} className="px-3 py-6 text-center text-ink-muted">등록된 과목이 없습니다.</td></tr>

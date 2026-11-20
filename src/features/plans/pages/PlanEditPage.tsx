@@ -18,6 +18,7 @@ type PlanItem = {
   foreignCredit: number | null;
   sourceCourseId: number | null;
   homeCourseId: number | null;
+  homeCourseName?: string | null;
   recognitionType: RecognitionType;
   expectedCredit: number | null;
   creditLimitWarning: boolean;
@@ -49,12 +50,6 @@ const MOCK_HOME_COURSES: { id: number; name: string; category: RecognitionType }
   { id: 900004, name: '국제경영', category: 'MAJOR_ELECTIVE' },
   { id: 900005, name: '글로벌문화의 이해', category: 'GENERAL' },
 ];
-
-function formatHomeCourse(id: number | null): string {
-  if (id === null) return '-';
-  const example = MOCK_HOME_COURSES.find((course) => course.id === id);
-  return example ? example.name : `본교 과목 ID ${id}`;
-}
 
 type HomeCourseFieldProps = {
   isMock: boolean;
@@ -433,7 +428,7 @@ export default function PlanEditPage() {
                     <td className="break-words px-3 py-4">{item.courseName}</td><td className="px-3 py-4">{item.foreignCredit ?? '-'}</td>
                     <td className="px-3 py-4">{item.expectedCredit ?? '-'}{item.creditLimitWarning && <span className="ml-2 text-danger">한도 초과</span>}</td>
                     <td className="px-3 py-4">{LABELS[item.recognitionType] ?? '확인 필요'}</td>
-                    <td className="break-words px-3 py-4">{item.homeCourseId === null ? '-' : formatHomeCourse(item.homeCourseId)}</td>
+                    <td className="break-words px-3 py-4">{item.homeCourseName ?? '-'}</td>
                     <td className="px-2 py-3"><div className="flex flex-wrap gap-2"><button type="button" className={outlineButtonClass} onClick={() => openCourseEdit(item)}>수정</button><button type="button" className={`${outlineButtonClass} disabled:cursor-not-allowed disabled:opacity-50`} disabled={deleteItemMutation.isPending || updateItemMutation.isPending} onClick={() => void handleDeleteCourse(item.itemId)}>{deletingItemId === item.itemId ? '삭제 중...' : '삭제'}</button></div></td>
                   </tr>)}
                   {demoItems.map((item) => <tr key={item.id} className="border-b border-line">
