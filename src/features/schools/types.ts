@@ -40,7 +40,12 @@ export type SchoolSummary = {
 // 3 → 3.0, 3.25 → 3.25
 const gpaText = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
-type LanguageReq = { testType: string; minScore: number | null; conditionNote?: string | null };
+type LanguageReq = {
+  testType: string;
+  minScore: number | null;
+  minSectionScore?: number | null;
+  conditionNote?: string | null;
+};
 
 const languageItem = (r: LanguageReq) =>
   `${languageTestLabel(r.testType)}${r.minScore != null ? ` ${r.minScore}` : ''}`;
@@ -51,7 +56,9 @@ const languageText = (reqs: LanguageReq[]) => reqs.map(languageItem).join(' / ')
 const languageDetailText = (reqs: LanguageReq[]) =>
   reqs
     .map((r) =>
-      r.conditionNote?.trim() ? `${languageItem(r)} (${r.conditionNote.trim()})` : languageItem(r),
+      r.conditionNote?.trim()
+        ? `${languageTestLabel(r.testType)} ${r.conditionNote.trim()}`
+        : languageItem(r),
     )
     .join(' / ');
 
@@ -134,7 +141,7 @@ const compareLanguage = (reqs: LanguageRequirement[], profile?: MyProfile): Crit
   );
   if (met.length === 0) return 'NOT_MET';
   // 총점은 넘어도 영역별 조건이 있으면 확인 필요로 둠
-  return met.some((r) => !r.conditionNote?.trim()) ? 'MET' : 'UNKNOWN';
+  return met.some((r) => r.minSectionScore == null) ? 'MET' : 'UNKNOWN';
 };
 
 export const toOfficialInfo = (d: UniversityDetail, profile?: MyProfile): OfficialInfo => {
