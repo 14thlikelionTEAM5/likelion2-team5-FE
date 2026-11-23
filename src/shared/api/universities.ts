@@ -40,7 +40,8 @@ export function searchUniversities(keyword: string): Promise<UniversitySearchRes
 export type LanguageRequirement = {
   testType: LanguageTestType;
   minScore: number | null;
-  conditionNote?: string | null; // 영역별 최저점 등 추가 조건
+  minSectionScore?: number | null;
+  conditionNote?: string | null;
 };
 
 export type Eligibility = {
