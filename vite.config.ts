@@ -7,6 +7,6 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   server: {
-    proxy: { '/api': { target: 'http://13.209.43.119', changeOrigin: true } },
+    proxy: { '/api': { target: 'http://43.202.142.89', changeOrigin: true } },
   },
 });
