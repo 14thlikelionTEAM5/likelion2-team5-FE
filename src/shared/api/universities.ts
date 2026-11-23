@@ -37,7 +37,11 @@ export function searchUniversities(keyword: string): Promise<UniversitySearchRes
   );
 }
 
-export type LanguageRequirement = { testType: LanguageTestType; minScore: number | null };
+export type LanguageRequirement = {
+  testType: LanguageTestType;
+  minScore: number | null;
+  conditionNote?: string | null; // 영역별 최저점 등 추가 조건
+};
 
 export type Eligibility = {
   status: EligibilityStatus;
