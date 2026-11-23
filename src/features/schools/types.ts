@@ -40,11 +40,19 @@ export type SchoolSummary = {
 // 3 → 3.0, 3.25 → 3.25
 const gpaText = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
-type LanguageReq = { testType: string; minScore: number | null };
+type LanguageReq = { testType: string; minScore: number | null; conditionNote?: string | null };
 
-const languageText = (reqs: LanguageReq[]) =>
+const languageItem = (r: LanguageReq) =>
+  `${languageTestLabel(r.testType)}${r.minScore != null ? ` ${r.minScore}` : ''}`;
+
+const languageText = (reqs: LanguageReq[]) => reqs.map(languageItem).join(' / ');
+
+// 상세 화면용: 영역별 조건까지 표시함
+const languageDetailText = (reqs: LanguageReq[]) =>
   reqs
-    .map((r) => `${languageTestLabel(r.testType)}${r.minScore != null ? ` ${r.minScore}` : ''}`)
+    .map((r) =>
+      r.conditionNote?.trim() ? `${languageItem(r)} (${r.conditionNote.trim()})` : languageItem(r),
+    )
     .join(' / ');
 
 export const conditionSummary = (minGpa: number | null, reqs: LanguageReq[]) => {
@@ -120,12 +128,13 @@ const compareLanguage = (reqs: LanguageRequirement[], profile?: MyProfile): Crit
     (r) => r.minScore != null && profile?.languageScores.some((s) => s.testType === r.testType),
   );
   if (comparable.length === 0) return 'UNKNOWN';
-  return comparable.some(
+  const met = comparable.filter(
     (r) =>
       (profile?.languageScores.find((s) => s.testType === r.testType)?.score ?? 0) >= r.minScore!,
-  )
-    ? 'MET'
-    : 'NOT_MET';
+  );
+  if (met.length === 0) return 'NOT_MET';
+  // 총점은 넘어도 영역별 조건이 있으면 확인 필요로 둠
+  return met.some((r) => !r.conditionNote?.trim()) ? 'MET' : 'UNKNOWN';
 };
 
 export const toOfficialInfo = (d: UniversityDetail, profile?: MyProfile): OfficialInfo => {
@@ -144,7 +153,8 @@ export const toOfficialInfo = (d: UniversityDetail, profile?: MyProfile): Offici
     ? 'UNKNOWN'
     : codes.includes('LANGUAGE_BELOW_MIN')
       ? 'NOT_MET'
-      : has(LANGUAGE_UNKNOWN)
+      : has(LANGUAGE_UNKNOWN) ||
+          (d.eligibility.status !== 'ELIGIBLE' && codes.some((c) => c.startsWith('LANGUAGE_')))
         ? 'UNKNOWN'
         : gpaResult === 'MET'
           ? 'MET'
@@ -157,7 +167,7 @@ export const toOfficialInfo = (d: UniversityDetail, profile?: MyProfile): Offici
 
   return {
     gpaCriterion: a?.minGpa != null ? `${gpaText(a.minGpa)} 이상` : undefined,
-    languageCriterion: reqs.length ? languageText(reqs) : undefined,
+    languageCriterion: reqs.length ? languageDetailText(reqs) : undefined,
     summarySections: [
       { title: '비용', body: a?.costSummary },
       { title: '혜택', body: a?.benefitSummary },
@@ -181,7 +191,7 @@ export const toOfficialInfo = (d: UniversityDetail, profile?: MyProfile): Offici
         },
         {
           item: '어학',
-          criterion: reqs.length ? languageText(reqs) : '-',
+          criterion: reqs.length ? languageDetailText(reqs) : '-',
           mine: myLanguage || '-',
           result: languageResult,
         },
