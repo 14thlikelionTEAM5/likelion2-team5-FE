@@ -4,9 +4,17 @@ import { api } from './client';
 
 export type { MajorType } from '@/shared/types/enums';
 
+export type SectionScores = {
+  reading: number;
+  listening: number;
+  speaking: number;
+  writing: number;
+};
+
 export type MyLanguageScore = {
   testType: string;
   score: number;
+  sectionScores?: SectionScores | null;
 };
 
 export type MyProfile = {
@@ -74,7 +82,7 @@ export type UpdateMyProfileRequest = Partial<{
   nickname: string;
   majorType: MajorType;
   gpa: number;
-  languageScores: { testType: LanguageTestType; score: number }[];
+  languageScores: { testType: LanguageTestType; score: number; sectionScores?: SectionScores }[];
 }>;
 
 export const updateMyProfile = (body: UpdateMyProfileRequest): Promise<MyProfile> => {

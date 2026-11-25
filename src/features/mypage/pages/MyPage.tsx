@@ -1,5 +1,5 @@
 import { useCheckNickname, isValidNickname, useMyProfile, useUpdateMyProfile, useChangeMyPassword, useDeleteMyAccount } from '@/shared/api/users';
-import type { MajorType, LanguageTestType } from '@/shared/api/users';
+import type { MajorType, LanguageTestType, SectionScores } from '@/shared/api/users';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router';
@@ -15,7 +15,30 @@ const testLabel = (value: string) => ({
   TOEFL_IBT: 'TOEFL iBT', TOEFL_NEW: 'TOEFL NEW', TOEFL_ITP: 'TOEFL ITP', IELTS: 'IELTS',
 } as Record<string, string>)[value] ?? value;
 const TEST_TYPES: LanguageTestType[] = ['TOEFL_IBT', 'TOEFL_NEW', 'TOEFL_ITP', 'IELTS'];
-type ScoreRow = { key: number; testType: LanguageTestType; score: string };
+type SectionKey = keyof SectionScores;
+const SECTION_FIELDS: { key: SectionKey; label: string }[] = [
+  { key: 'reading', label: 'Reading (R)' },
+  { key: 'listening', label: 'Listening (L)' },
+  { key: 'speaking', label: 'Speaking (S)' },
+  { key: 'writing', label: 'Writing (W)' },
+];
+type SectionInputs = Record<SectionKey, string>;
+const emptySections = (): SectionInputs => ({ reading: '', listening: '', speaking: '', writing: '' });
+type ScoreRow = { key: number; testType: LanguageTestType; score: string; sections: SectionInputs };
+
+function sectionRule(testType: LanguageTestType) {
+  switch (testType) {
+    case 'IELTS': return { min: 0, max: 9, step: 0.5 };
+    case 'TOEFL_IBT': return { min: 0, max: 30, step: 1 };
+    case 'TOEFL_NEW': return { min: 1, max: 6, step: 0.5 };
+    default: return null; // TOEFL_ITP: 영역별 점수 미지원
+  }
+}
+function isValidSectionValue(value: string, rule: { min: number; max: number; step: number }) {
+  const number = Number(value);
+  return value.trim() !== '' && Number.isFinite(number) && number >= rule.min && number <= rule.max
+    && Math.abs(number / rule.step - Math.round(number / rule.step)) < 1e-8;
+}
 
 
 export default function MyPage() {
@@ -113,6 +136,10 @@ export default function MyPage() {
     setGpa(profile.gpa === null ? '' : String(profile.gpa));
     setScores(profile.languageScores.filter((x) => TEST_TYPES.includes(x.testType as LanguageTestType)).map((x, i) => ({
       key: i + 1, testType: x.testType as LanguageTestType, score: String(x.score),
+      sections: x.sectionScores ? {
+        reading: String(x.sectionScores.reading), listening: String(x.sectionScores.listening),
+        speaking: String(x.sectionScores.speaking), writing: String(x.sectionScores.writing),
+      } : emptySections(),
     })));
   }, [profile]);
 
@@ -145,9 +172,30 @@ export default function MyPage() {
     if (scores.some((row) => !row.score.trim() || !Number.isFinite(Number(row.score)) || Number(row.score) < 0)) {
       setSaveError('어학 시험 점수는 0 이상의 숫자로 입력해 주세요.'); return;
     }
+    for (const row of scores) {
+      const rule = sectionRule(row.testType);
+      if (!rule) continue;
+      const values = SECTION_FIELDS.map(({ key }) => row.sections[key]);
+      if (values.every((value) => value.trim() === '')) continue; // 미입력 허용
+      if (!values.every((value) => isValidSectionValue(value, rule))) {
+        const unit = rule.step === 1 ? '정수' : '0.5 단위';
+        setSaveError(`${testLabel(row.testType)} 영역별 점수는 R/L/S/W 네 칸을 모두 ${rule.min}~${rule.max} (${unit}) 범위로 입력해 주세요.`);
+        return;
+      }
+    }
     try {
       await updateProfile.mutateAsync({ majorType, gpa: gpaNumber,
-        languageScores: scores.map(({ testType, score }) => ({ testType, score: Number(score) })) });
+        languageScores: scores.map(({ testType, score, sections }) => {
+          const rule = sectionRule(testType);
+          const hasSections = rule && SECTION_FIELDS.every(({ key }) => sections[key].trim() !== '');
+          return {
+            testType, score: Number(score),
+            ...(hasSections ? { sectionScores: {
+              reading: Number(sections.reading), listening: Number(sections.listening),
+              speaking: Number(sections.speaking), writing: Number(sections.writing),
+            } } : {}),
+          };
+        }) });
       setSaveNotice('지원 조건과 어학 성적을 저장했습니다.');
     } catch (err) { setSaveError(err instanceof Error ? err.message : '지원 조건 저장에 실패했습니다.'); }
   };
@@ -254,7 +302,7 @@ export default function MyPage() {
             <div className="flex flex-col gap-4">
               {scores.map((row) => <div key={row.key} className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                 <label className={label}>시험 종류
-                  <select className={`${inputClass} mt-2`} value={row.testType} onChange={(e) => setScores((prev) => prev.map((r) => r.key === row.key ? { ...r, testType: e.target.value as LanguageTestType } : r))}>
+                  <select className={`${inputClass} mt-2`} value={row.testType} onChange={(e) => setScores((prev) => prev.map((r) => r.key === row.key ? { ...r, testType: e.target.value as LanguageTestType, sections: emptySections() } : r))}>
                     {TEST_TYPES.map((t) => <option key={t} value={t}>{testLabel(t)}</option>)}
                   </select>
                 </label>
@@ -262,12 +310,40 @@ export default function MyPage() {
                   <input className={`${inputClass} mt-2`} type="number" min="0" step="any" value={row.score} onChange={(e) => setScores((prev) => prev.map((r) => r.key === row.key ? { ...r, score: e.target.value } : r))} />
                 </label>
                 <button type="button" className={outline} onClick={() => setScores((prev) => prev.filter((r) => r.key !== row.key))}>행 삭제</button>
+                {sectionRule(row.testType) && (
+                  <fieldset className="min-w-0 rounded-[10px] border border-line bg-panel p-4 sm:col-span-3">
+                    <legend className="px-1 text-sm font-semibold text-ink">영역별 점수 (선택)</legend>
+                    <p className="mb-3 text-sm text-ink-muted">
+                      입력하지 않아도 저장할 수 있습니다. 입력할 경우 R/L/S/W 네 칸 모두 필수입니다.
+                      {' '}({sectionRule(row.testType)!.min}~{sectionRule(row.testType)!.max}, {sectionRule(row.testType)!.step === 1 ? '정수' : '0.5 단위'})
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-4">
+                      {SECTION_FIELDS.map(({ key, label: sectionLabel }) => (
+                        <label key={key} className="text-sm font-medium text-ink">
+                          {sectionLabel}
+                          <input
+                            className={`${inputClass} mt-2`}
+                            aria-label={`${testLabel(row.testType)} ${sectionLabel}`}
+                            type="number"
+                            min={sectionRule(row.testType)!.min}
+                            max={sectionRule(row.testType)!.max}
+                            step={sectionRule(row.testType)!.step}
+                            value={row.sections[key]}
+                            onChange={(event) => setScores((prev) => prev.map((r) =>
+                              r.key === row.key ? { ...r, sections: { ...r.sections, [key]: event.target.value } } : r,
+                            ))}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
               </div>)}
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <button type="button" className={outline} disabled={scores.length >= TEST_TYPES.length} onClick={() => {
                 const next = TEST_TYPES.find((t) => !scores.some((s) => s.testType === t));
-                if (next) setScores((prev) => [...prev, { key: Date.now(), testType: next, score: '' }]);
+                if (next) setScores((prev) => [...prev, { key: Date.now(), testType: next, score: '', sections: emptySections() }]);
               }}>시험 추가</button>
               <button type="button" onClick={() => void handleSaveConditions()} disabled={updateProfile.isPending}
                 className="min-h-[51px] rounded-[10px] bg-primary px-7 text-[17px] font-semibold text-white disabled:opacity-50">
